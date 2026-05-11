@@ -1,0 +1,17 @@
+{
+  "name": "upmyskills",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI skill tools hub built from curated GitHub skill repositories.",
+  "scripts": {
+    "dev": "wrangler pages dev public",
+    "pages:deploy": "wrangler pages deploy public --project-name upmyskills"
+  },
+  "keywords": [
+    "ai-skills",
+    "claude-skills",
+    "codex",
+    "cloudflare-pages"
+  ],
+  "license": "MIT"
+}

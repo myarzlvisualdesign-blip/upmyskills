@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Upmyskills - AI Skill Tools Hub</title>
+    <meta
+      name="description"
+      content="Upmyskills mengubah repo skill marketing, SEO, design, engineering, AI research, dan C-level advisory menjadi katalog tool yang siap dipakai."
+    />
+    <link rel="icon" href="assets/upmyskills-map.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Upmyskills home">
+          <span class="brand-mark">U</span>
+          <span>
+            <strong>Upmyskills</strong>
+            <small>AI skill tools hub</small>
+          </span>
+        </a>
+
+        <label class="search-field">
+          <span>Search</span>
+          <input id="searchInput" type="search" placeholder="Cari SEO, ads, design, C-level..." />
+        </label>
+
+        <div class="topbar-actions">
+          <button class="icon-button" id="copyStackButton" type="button" title="Copy command pack">
+            <span aria-hidden="true">CP</span>
+          </button>
+          <a class="primary-link" href="#stack">Build stack</a>
+        </div>
+      </header>
+
+      <main>
+        <section class="workspace">
+          <div class="intro-panel">
+            <div class="intro-copy">
+              <p class="eyebrow">Curated from the 6 screenshots</p>
+              <h1>Semua repo skill jadi satu workspace tool.</h1>
+              <p>
+                Marketing, SEO/GEO, brand design, engineering, AI research, dan advisory dalam
+                satu katalog kerja dengan command pack dan prompt stack siap pakai.
+              </p>
+            </div>
+            <img class="skill-map" src="assets/upmyskills-map.svg" alt="Upmyskills skill network map" />
+          </div>
+
+          <section class="stats-grid" aria-label="Upmyskills summary">
+            <article>
+              <strong id="sourceCount">0</strong>
+              <span>Sumber tool</span>
+            </article>
+            <article>
+              <strong id="categoryCount">0</strong>
+              <span>Kategori</span>
+            </article>
+            <article>
+              <strong id="selectedCount">0</strong>
+              <span>Tool aktif</span>
+            </article>
+            <article>
+              <strong>Pages</strong>
+              <span>Siap deploy</span>
+            </article>
+          </section>
+
+          <nav class="category-tabs" id="categoryTabs" aria-label="Filter kategori"></nav>
+
+          <section class="toolbar" aria-label="Tool controls">
+            <div>
+              <p class="section-kicker">Tool Library</p>
+              <h2 id="libraryTitle">Semua tools</h2>
+            </div>
+            <div class="toolbar-controls">
+              <label>
+                Sort
+                <select id="sortSelect">
+                  <option value="stars">Stars</option>
+                  <option value="updated">Updated</option>
+                  <option value="name">Name</option>
+                </select>
+              </label>
+              <button class="secondary-button" id="selectAllButton" type="button">Select all</button>
+              <button class="secondary-button" id="clearButton" type="button">Clear</button>
+            </div>
+          </section>
+
+          <section class="tool-grid" id="toolGrid" aria-live="polite"></section>
+        </section>
+
+        <aside class="stack-panel" id="stack">
+          <div class="stack-header">
+            <p class="section-kicker">Stack Builder</p>
+            <h2>Runbook tool</h2>
+            <p>
+              Prompt kerja, command pack, dan daftar sumber aktif untuk stack yang sedang dipilih.
+            </p>
+          </div>
+
+          <label class="goal-field">
+            Goal
+            <select id="goalSelect">
+              <option value="full">Build full AI skills operating system</option>
+              <option value="marketing">Scale growth and paid acquisition</option>
+              <option value="seo">Win SEO, GEO, and AI Search citations</option>
+              <option value="brand">Ship brand identity and product design</option>
+              <option value="engineering">Upgrade engineering agent workflow</option>
+              <option value="research">Run technical AI research loop</option>
+              <option value="advisory">Create executive advisory board</option>
+            </select>
+          </label>
+
+          <div class="stack-card">
+            <div class="stack-card-title">
+              <span>Selected sources</span>
+              <strong id="selectedRepoCount">0</strong>
+            </div>
+            <ul id="selectedList" class="selected-list"></ul>
+          </div>
+
+          <div class="stack-card">
+            <div class="stack-card-title">
+              <span>Command pack</span>
+              <button class="text-button" id="copyCommandsInline" type="button">Copy</button>
+            </div>
+            <pre id="commandOutput"></pre>
+          </div>
+
+          <div class="stack-card">
+            <div class="stack-card-title">
+              <span>Prompt kerja</span>
+              <button class="text-button" id="copyPromptButton" type="button">Copy</button>
+            </div>
+            <textarea id="promptOutput" readonly rows="10"></textarea>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="app.js" type="module"></script>
+  </body>
+</html>

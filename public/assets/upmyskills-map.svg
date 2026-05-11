@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 520" role="img" aria-labelledby="title desc">
+  <title id="title">Upmyskills skill network</title>
+  <desc id="desc">A visual map connecting marketing, SEO, design, engineering, research, and advisory skills.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#000000" flood-opacity="0.24"/>
+    </filter>
+    <linearGradient id="panel" x1="0" x2="1" y1="0" y2="1">
+      <stop stop-color="#fffdf8" offset="0"/>
+      <stop stop-color="#dbe9d4" offset="1"/>
+    </linearGradient>
+  </defs>
+  <rect x="28" y="30" width="664" height="460" rx="24" fill="#0e0e0d" stroke="#3b3b37" stroke-width="2"/>
+  <path d="M360 264 L188 152 M360 264 L530 152 M360 264 L160 355 M360 264 L560 356 M360 264 L360 420" stroke="#f6f0df" stroke-width="12" stroke-linecap="round"/>
+  <path d="M360 264 L188 152 M360 264 L530 152 M360 264 L160 355 M360 264 L560 356 M360 264 L360 420" stroke="#5d43d8" stroke-width="6" stroke-linecap="round"/>
+  <g filter="url(#shadow)">
+    <rect x="260" y="174" width="200" height="164" rx="18" fill="url(#panel)" stroke="#f6f0df" stroke-width="5"/>
+    <circle cx="360" cy="244" r="42" fill="#5d43d8"/>
+    <path d="M332 244 C332 224 348 210 360 224 C372 210 388 224 388 244 C388 264 372 278 360 286 C348 278 332 264 332 244Z" fill="#c8dcc3" stroke="#181817" stroke-width="5"/>
+    <text x="360" y="316" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="800" fill="#181817">UPMYSKILLS</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="82" y="86" width="212" height="96" rx="16" fill="#fff6dc" stroke="#181817" stroke-width="5"/>
+    <text x="188" y="130" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="900" fill="#181817">MARKETING</text>
+    <text x="188" y="158" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="700" fill="#315f4c">ads + growth</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="430" y="86" width="210" height="96" rx="16" fill="#c8dcc3" stroke="#181817" stroke-width="5"/>
+    <text x="535" y="130" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="900" fill="#181817">SEO + GEO</text>
+    <text x="535" y="158" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="700" fill="#315f4c">AI citations</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="62" y="304" width="216" height="102" rx="16" fill="#5d43d8" stroke="#181817" stroke-width="5"/>
+    <text x="170" y="348" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="900" fill="#fffdf8">BRAND</text>
+    <text x="170" y="376" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="800" fill="#fff6dc">design systems</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="448" y="304" width="224" height="102" rx="16" fill="#fffdf8" stroke="#181817" stroke-width="5"/>
+    <text x="560" y="348" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="900" fill="#181817">ENGINEERING</text>
+    <text x="560" y="376" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="800" fill="#315f4c">AI agents</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="250" y="398" width="220" height="82" rx="16" fill="#315f4c" stroke="#181817" stroke-width="5"/>
+    <text x="360" y="435" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="900" fill="#fffdf8">RESEARCH</text>
+    <text x="360" y="460" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="800" fill="#c8dcc3">paper loop</text>
+  </g>
+  <g>
+    <rect x="90" y="438" width="134" height="42" rx="21" fill="#c25b35"/>
+    <text x="157" y="465" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="900" fill="#fffdf8">C-LEVEL</text>
+  </g>
+  <g>
+    <rect x="500" y="38" width="118" height="42" rx="21" fill="#c25b35"/>
+    <text x="559" y="65" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="900" fill="#fffdf8">12 SOURCES</text>
+  </g>
+</svg>
