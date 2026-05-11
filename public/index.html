@@ -59,12 +59,16 @@
               <span>Kategori</span>
             </article>
             <article>
+              <strong id="skillFileCount">0</strong>
+              <span>Verified skills</span>
+            </article>
+            <article>
               <strong id="selectedCount">0</strong>
               <span>Tool aktif</span>
             </article>
             <article>
-              <strong>Pages</strong>
-              <span>Siap deploy</span>
+              <strong>No quota</strong>
+              <span>Client-side UI</span>
             </article>
           </section>
 
@@ -90,6 +94,26 @@
           </section>
 
           <section class="tool-grid" id="toolGrid" aria-live="polite"></section>
+
+          <section class="skill-browser" aria-label="Verified skill catalog">
+            <div class="toolbar skill-toolbar">
+              <div>
+                <p class="section-kicker">Verified Skill Files</p>
+                <h2 id="skillBrowserTitle">0 skill files ready</h2>
+                <p>
+                  Semua entry di bawah ditemukan sebagai file `SKILL.md` di GitHub tree. Runtime
+                  tetap mengikuti dependency, API key, dan instruksi tiap repo.
+                </p>
+              </div>
+              <label class="search-field skill-search">
+                <span>Skill</span>
+                <input id="skillSearchInput" type="search" placeholder="Cari skill spesifik..." />
+              </label>
+            </div>
+
+            <div class="source-audit" id="sourceAudit"></div>
+            <div class="skill-list" id="skillList"></div>
+          </section>
         </section>
 
         <aside class="stack-panel" id="stack">
@@ -143,6 +167,7 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+    <script src="skill-catalog.js"></script>
     <script src="app.js" type="module"></script>
   </body>
 </html>

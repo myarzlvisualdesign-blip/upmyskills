@@ -203,9 +203,13 @@ const goalMap = {
   advisory: ["garrytan-advisory", "claude-skills-engineering", "awesome-agent-skills", "marketingskills"]
 };
 
+const skillCatalog = window.UPMYSKILLS_SKILL_CATALOG || { generatedAt: "", sources: [], skills: [], totalSkills: 0 };
+const numberFormatter = new Intl.NumberFormat("id-ID");
+
 const state = {
   category: "All",
   query: "",
+  skillQuery: "",
   sort: "stars",
   selected: new Set(goalMap.full)
 };
@@ -220,12 +224,17 @@ const nodes = {
   libraryTitle: document.querySelector("#libraryTitle"),
   sourceCount: document.querySelector("#sourceCount"),
   categoryCount: document.querySelector("#categoryCount"),
+  skillFileCount: document.querySelector("#skillFileCount"),
   selectedCount: document.querySelector("#selectedCount"),
   selectedRepoCount: document.querySelector("#selectedRepoCount"),
   selectedList: document.querySelector("#selectedList"),
   commandOutput: document.querySelector("#commandOutput"),
   promptOutput: document.querySelector("#promptOutput"),
   goalSelect: document.querySelector("#goalSelect"),
+  skillBrowserTitle: document.querySelector("#skillBrowserTitle"),
+  skillSearchInput: document.querySelector("#skillSearchInput"),
+  sourceAudit: document.querySelector("#sourceAudit"),
+  skillList: document.querySelector("#skillList"),
   toast: document.querySelector("#toast")
 };
 
@@ -247,6 +256,15 @@ function normalize(value) {
   return value.toLowerCase();
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 function getFilteredTools() {
   const query = normalize(state.query.trim());
   const filtered = tools.filter((tool) => {
@@ -261,6 +279,15 @@ function getFilteredTools() {
     if (state.sort === "updated") return new Date(b.updated) - new Date(a.updated);
     if (state.sort === "name") return a.name.localeCompare(b.name);
     return b.stars - a.stars;
+  });
+}
+
+function getFilteredSkills() {
+  const query = normalize(state.skillQuery.trim());
+  return skillCatalog.skills.filter((skill) => {
+    const matchesCategory = state.category === "All" || skill.category === state.category;
+    const text = normalize(`${skill.name} ${skill.sourceName} ${skill.repo} ${skill.category} ${skill.subcategory} ${skill.path}`);
+    return matchesCategory && (!query || text.includes(query));
   });
 }
 
@@ -338,6 +365,74 @@ function renderTools() {
     .join("");
 }
 
+function renderSourceAudit() {
+  if (!nodes.sourceAudit) return;
+
+  nodes.sourceAudit.innerHTML = skillCatalog.sources
+    .map(
+      (source) => `
+        <article class="audit-card">
+          <span>${escapeHtml(source.name)}</span>
+          <strong>${numberFormatter.format(source.count)}</strong>
+          <small>${escapeHtml(source.status)}</small>
+        </article>
+      `
+    )
+    .join("");
+}
+
+function renderSkillCatalog() {
+  if (!nodes.skillList) return;
+
+  const filteredSkills = getFilteredSkills();
+  nodes.skillBrowserTitle.textContent = `${numberFormatter.format(filteredSkills.length)} skill files ready`;
+
+  if (!filteredSkills.length) {
+    nodes.skillList.innerHTML = `
+      <article class="skill-row">
+        <div>
+          <h3>Tidak ada skill yang cocok</h3>
+          <p>Ubah filter kategori atau kata kunci skill.</p>
+        </div>
+      </article>
+    `;
+    return;
+  }
+
+  nodes.skillList.innerHTML = filteredSkills
+    .map((skill) => {
+      const folder = skill.repo.split("/").pop();
+      const command = [
+        `# ${skill.name}`,
+        `[ -d "${folder}" ] || git clone https://github.com/${skill.repo}.git`,
+        `# Read and run through your agent runtime: ${skill.path}`,
+        `open ${skill.url}`
+      ].join("\n");
+
+      return `
+        <article class="skill-row">
+          <div>
+            <h3>${escapeHtml(skill.name)}</h3>
+            <p>${escapeHtml(skill.status)}</p>
+          </div>
+          <div>
+            <p><strong>${escapeHtml(skill.sourceName)}</strong></p>
+            <p>${escapeHtml(skill.repo)}</p>
+          </div>
+          <div>
+            <p>${escapeHtml(skill.subcategory)}</p>
+            <p>${escapeHtml(skill.path)}</p>
+          </div>
+          <div class="skill-row-actions">
+            <a href="${skill.url}" target="_blank" rel="noreferrer">Open</a>
+            <button type="button" data-copy-skill="${encodeURIComponent(command)}">Copy run</button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
 function getSelectedTools() {
   return tools.filter((tool) => state.selected.has(tool.id));
 }
@@ -387,6 +482,7 @@ function renderStack() {
   const selectedTools = getSelectedTools();
   nodes.sourceCount.textContent = String(tools.length);
   nodes.categoryCount.textContent = String(categories.length - 1);
+  nodes.skillFileCount.textContent = numberFormatter.format(skillCatalog.totalSkills || skillCatalog.skills.length);
   nodes.selectedCount.textContent = String(selectedTools.length);
   nodes.selectedRepoCount.textContent = String(selectedTools.length);
 
@@ -409,6 +505,8 @@ function renderStack() {
 function render() {
   renderTabs();
   renderTools();
+  renderSourceAudit();
+  renderSkillCatalog();
   renderStack();
 }
 
@@ -451,9 +549,20 @@ nodes.toolGrid.addEventListener("click", (event) => {
   }
 });
 
+nodes.skillList.addEventListener("click", (event) => {
+  const copy = event.target.closest("button[data-copy-skill]");
+  if (!copy) return;
+  copyText(decodeURIComponent(copy.dataset.copySkill), "Skill runbook");
+});
+
 nodes.searchInput.addEventListener("input", (event) => {
   state.query = event.target.value;
   renderTools();
+});
+
+nodes.skillSearchInput.addEventListener("input", (event) => {
+  state.skillQuery = event.target.value;
+  renderSkillCatalog();
 });
 
 nodes.sortSelect.addEventListener("change", (event) => {

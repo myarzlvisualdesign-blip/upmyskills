@@ -4,6 +4,7 @@
   "private": true,
   "description": "AI skill tools hub built from curated GitHub skill repositories.",
   "scripts": {
+    "catalog": "node scripts/build-skill-catalog.mjs",
     "dev": "wrangler pages dev public",
     "pages:deploy": "wrangler pages deploy public --project-name upmyskills"
   },
