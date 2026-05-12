@@ -5,7 +5,7 @@ import type { GeneratedSeed, NormalizedTool } from "../lib/tools/types";
 const root = process.cwd();
 const inputPath = path.join(root, "data", "tools.generated.json");
 const outputDir = path.join(root, "cloudflare-static");
-const outputPath = path.join(outputDir, "tools.json");
+const dataDir = path.join(outputDir, "data");
 
 function compactTool(tool: NormalizedTool) {
   const title = cleanTitle(tool.title);
@@ -95,13 +95,59 @@ function isUsableStaticTool(tool: NormalizedTool) {
 
 const seed = JSON.parse(fs.readFileSync(inputPath, "utf8")) as GeneratedSeed;
 const tools = seed.tools.filter(isUsableStaticTool).map(compactTool);
-const compact = {
+const domainGroups = new Map<string, ReturnType<typeof compactTool>[]>();
+const sourceCounts: Record<string, number> = {};
+
+for (const tool of tools) {
+  const current = domainGroups.get(tool.domain) ?? [];
+  current.push(tool);
+  domainGroups.set(tool.domain, current);
+  sourceCounts[tool.sourceRepo] = (sourceCounts[tool.sourceRepo] ?? 0) + 1;
+}
+
+const domainCounts = Array.from(domainGroups.entries())
+  .map(([domain, items]) => ({
+    domain,
+    slug: staticDomainSlug(domain),
+    count: items.length
+  }))
+  .sort((a, b) => a.domain.localeCompare(b.domain));
+
+const featuredTools = tools
+  .slice()
+  .sort((a, b) => `${a.domain}${a.title}`.localeCompare(`${b.domain}${b.title}`))
+  .slice(0, 18);
+
+const manifest = {
   generatedAt: seed.generatedAt,
-  tools,
+  toolsCount: tools.length,
   sources: seed.sources,
-  skippedCount: seed.skipped.length + (seed.tools.length - tools.length)
+  skippedCount: seed.skipped.length + (seed.tools.length - tools.length),
+  domainCounts,
+  sourceCounts,
+  featuredTools,
+  toolIndex: Object.fromEntries(tools.map((tool) => [tool.slug, tool.domain]))
 };
 
 fs.mkdirSync(outputDir, { recursive: true });
-fs.writeFileSync(outputPath, `${JSON.stringify(compact)}\n`);
-console.log(`Wrote ${path.relative(root, outputPath)} with ${compact.tools.length} executable tools.`);
+fs.rmSync(dataDir, { recursive: true, force: true });
+fs.mkdirSync(dataDir, { recursive: true });
+fs.rmSync(path.join(outputDir, "tools.json"), { force: true });
+
+for (const [domain, items] of domainGroups.entries()) {
+  const slug = staticDomainSlug(domain);
+  const filePath = path.join(dataDir, `tools-${slug}.json`);
+  fs.writeFileSync(filePath, `${JSON.stringify({ domain, slug, tools: items })}\n`);
+}
+
+const manifestPath = path.join(dataDir, "manifest.json");
+fs.writeFileSync(manifestPath, `${JSON.stringify(manifest)}\n`);
+console.log(`Wrote split Cloudflare data with ${tools.length} executable tools across ${domainGroups.size} domains.`);
+
+function staticDomainSlug(domain: string) {
+  return domain
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}

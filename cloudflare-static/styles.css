@@ -1,15 +1,15 @@
 :root {
-  --bg: #f5f3ed;
-  --card: #fffdf8;
-  --ink: #181817;
-  --muted: #66645d;
-  --line: #d7d1c3;
-  --green: #315f4c;
-  --mint: #c8dcc3;
-  --violet: #5d43d8;
-  --rust: #c25b35;
-  --cream: #fff6dc;
-  --shadow: 0 22px 70px rgba(24, 24, 23, 0.13);
+  --bg: #020617;
+  --card: rgba(15, 23, 42, 0.86);
+  --ink: #e5e7eb;
+  --muted: #94a3b8;
+  --line: rgba(148, 163, 184, 0.2);
+  --green: #9333ea;
+  --mint: #c084fc;
+  --violet: #7c3aed;
+  --rust: #a855f7;
+  --cream: #f8fafc;
+  --shadow: 0 22px 70px rgba(0, 0, 0, 0.34);
   --radius: 8px;
 }
 
@@ -25,8 +25,9 @@ body {
   margin: 0;
   min-width: 320px;
   background:
-    radial-gradient(circle at top left, rgba(49, 95, 76, 0.16), transparent 30rem),
-    radial-gradient(circle at bottom right, rgba(194, 91, 53, 0.14), transparent 26rem),
+    radial-gradient(circle at top left, rgba(147, 51, 234, 0.2), transparent 31rem),
+    radial-gradient(circle at top right, rgba(126, 34, 206, 0.2), transparent 30rem),
+    radial-gradient(circle at bottom right, rgba(168, 85, 247, 0.14), transparent 26rem),
     var(--bg);
   color: var(--ink);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -60,10 +61,10 @@ a {
   justify-content: space-between;
   margin-bottom: 18px;
   padding: 12px;
-  border: 1px solid rgba(24, 24, 23, 0.12);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: rgba(255, 253, 248, 0.9);
-  box-shadow: 0 12px 35px rgba(27, 24, 19, 0.08);
+  background: rgba(2, 6, 23, 0.78);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.24);
   backdrop-filter: blur(18px);
 }
 
@@ -74,15 +75,10 @@ a {
   text-decoration: none;
 }
 
-.brand-mark {
-  display: grid;
-  width: 42px;
-  height: 42px;
-  place-items: center;
-  border-radius: var(--radius);
-  background: var(--ink);
-  color: var(--card);
-  font-weight: 900;
+.brand-dot {
+  color: var(--green);
+  font-size: 1.8rem;
+  line-height: 1;
 }
 
 .brand strong,
@@ -116,7 +112,7 @@ a {
 }
 
 .nav a:hover {
-  background: rgba(24, 24, 23, 0.06);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--ink);
 }
 
@@ -130,7 +126,7 @@ a {
   border-radius: var(--radius);
   border: 1px solid rgba(255, 255, 255, 0.12);
   background:
-    radial-gradient(125% 125% at 50% 0%, #020617 48%, rgba(19, 255, 170, 0.74)),
+    radial-gradient(125% 125% at 50% 0%, #000 46%, rgba(88, 28, 135, 0.78)),
     #020617;
   color: var(--card);
   padding: clamp(24px, 5vw, 56px);
@@ -158,9 +154,9 @@ a {
 
 .hero::after {
   background:
-    radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.11), transparent 24rem),
-    radial-gradient(circle at 20% 75%, rgba(206, 132, 207, 0.24), transparent 20rem),
-    radial-gradient(circle at 80% 72%, rgba(221, 51, 92, 0.22), transparent 18rem);
+    radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.1), transparent 24rem),
+    radial-gradient(circle at 20% 75%, rgba(147, 51, 234, 0.3), transparent 20rem),
+    radial-gradient(circle at 80% 72%, rgba(126, 34, 206, 0.28), transparent 18rem);
   animation: auroraGlow 10s ease-in-out infinite alternate;
 }
 
@@ -180,13 +176,23 @@ a {
 
 .hero .eyebrow {
   display: inline-flex;
+  gap: 8px;
+  align-items: center;
   width: fit-content;
   margin-inline: auto;
   border-radius: 999px;
-  background: rgba(75, 85, 99, 0.5);
-  color: #e5e7eb;
+  border: 1px solid rgba(147, 51, 234, 0.5);
+  background: rgba(88, 28, 135, 0.2);
+  color: #d8b4fe;
   padding: 8px 12px;
   text-transform: none;
+}
+
+.hero .eyebrow span {
+  border-radius: 999px;
+  background: var(--green);
+  color: #fff;
+  padding: 4px 10px;
 }
 
 h1,
@@ -211,6 +217,15 @@ h1 {
   background-clip: text;
   color: transparent;
   font-weight: 700;
+}
+
+.hero h2 {
+  max-width: 900px;
+  margin-inline: auto;
+  margin-bottom: 20px;
+  font-size: clamp(2.5rem, 7vw, 6.6rem);
+  font-weight: 300;
+  line-height: 1;
 }
 
 h2 {
@@ -271,7 +286,7 @@ button,
   gap: 8px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--card);
+  background: rgba(15, 23, 42, 0.9);
   color: var(--ink);
   cursor: pointer;
   font-weight: 900;
@@ -293,10 +308,53 @@ button.primary {
 }
 
 .aurora-button {
-  border-color: #13ffaa;
-  background: rgba(2, 6, 23, 0.1);
+  border-color: #a855f7;
+  background: rgba(255, 255, 255, 0.98);
   color: #fff;
-  box-shadow: 0 4px 24px rgba(19, 255, 170, 0.58);
+  color: #000;
+  box-shadow: 0 4px 24px rgba(147, 51, 234, 0.58);
+}
+
+.marquee-wrap {
+  position: relative;
+  width: min(720px, 100%);
+  height: 42px;
+  margin: 58px auto 0;
+  overflow: hidden;
+}
+
+.marquee-wrap::before,
+.marquee-wrap::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 84px;
+  content: "";
+  pointer-events: none;
+}
+
+.marquee-wrap::before {
+  left: 0;
+  background: linear-gradient(to right, #000, transparent);
+}
+
+.marquee-wrap::after {
+  right: 0;
+  background: linear-gradient(to left, #000, transparent);
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 20s linear infinite;
+  white-space: nowrap;
+  color: #9ca3af;
+  font-size: 1.12rem;
+}
+
+.marquee-track span {
+  margin-inline: 24px;
 }
 
 .grid {
@@ -321,7 +379,8 @@ button.primary {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--card);
-  box-shadow: 0 10px 25px rgba(39, 35, 28, 0.05);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(18px);
 }
 
 .card.pad {
@@ -355,9 +414,9 @@ button.primary {
   display: inline-flex;
   min-height: 28px;
   align-items: center;
-  border: 1px solid rgba(24, 24, 23, 0.12);
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.06);
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 800;
@@ -365,8 +424,9 @@ button.primary {
 }
 
 .pill.strong {
-  background: var(--mint);
-  color: var(--ink);
+  border-color: rgba(19, 255, 170, 0.34);
+  background: rgba(19, 255, 170, 0.12);
+  color: var(--mint);
 }
 
 .domain-card,
@@ -401,7 +461,7 @@ textarea {
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: #fff;
+  background: rgba(2, 6, 23, 0.74);
   color: var(--ink);
   outline: none;
 }
@@ -471,7 +531,7 @@ label {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: rgba(215, 209, 195, 0.26);
+  background: rgba(2, 6, 23, 0.48);
 }
 
 .output-empty,
@@ -505,8 +565,9 @@ pre {
   overflow: auto;
   white-space: pre-wrap;
   border-radius: var(--radius);
-  background: var(--ink);
-  color: var(--card);
+  border: 1px solid var(--line);
+  background: #020617;
+  color: #dbeafe;
   padding: 16px;
   font-size: 0.82rem;
   line-height: 1.55;
@@ -545,6 +606,16 @@ pre {
   }
 }
 
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
 .toast {
   position: fixed;
   right: 18px;
@@ -554,7 +625,8 @@ pre {
   opacity: 0;
   pointer-events: none;
   border-radius: var(--radius);
-  background: var(--ink);
+  border: 1px solid var(--line);
+  background: #020617;
   color: #fff;
   padding: 12px 14px;
   transition: 180ms ease;

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Database, Sparkles, Workflow } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { AuroraHero } from "@/components/ui/futurastic-hero-section";
+import HeroSection from "@/components/ui/quantam-mysh-hero";
 import { DomainCard } from "@/components/domain-card";
 import { domains, domainToSlug } from "@/lib/tools/domains";
 import { getToolStats } from "@/lib/tools/queries";
@@ -15,19 +15,12 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-8">
-      <AuroraHero
-        eyebrow="UpMySkills beta is live"
-        title="Run thousands of Claude and AI skills as real tools."
-        description="UpMySkills turns GitHub skill repos into executable workflows with forms, generated outputs, saved history, Markdown export, and source attribution."
-        ctaLabel="Open dashboard"
-        ctaHref="/dashboard"
-        secondaryLabel="Browse tools"
-        secondaryHref="/tools"
-        metrics={[
-          { label: "Executable tools", value: stats.tools.toLocaleString("id-ID") },
-          { label: "Source repos", value: stats.sources.toLocaleString("id-ID") },
-          { label: "Saved runs", value: stats.runs.toLocaleString("id-ID") }
-        ]}
+      <HeroSection
+        eyebrow="Executable AI Skills Studio"
+        titleTop={`${stats.tools.toLocaleString("id-ID")} AI Skills, Ready to Run.`}
+        titleBottom="Built for Real Workflows."
+        descriptionTop="UpMySkills converts Claude and AI skill repositories into usable web tools."
+        descriptionBottom="Forms, generated outputs, local history, Markdown export, search, filters, and source attribution."
       />
 
       <section className="grid gap-4 md:grid-cols-3">

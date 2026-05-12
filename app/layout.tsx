@@ -23,16 +23,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <div className="mx-auto flex min-h-screen w-full max-w-[1680px] flex-col px-4 py-4 md:px-6">
-          <header className="sticky top-3 z-40 mb-4 rounded-lg border bg-card/90 px-3 py-3 shadow-sm backdrop-blur-xl">
+          <header className="sticky top-3 z-40 mb-4 rounded-lg border border-purple-600/20 bg-black/70 px-3 py-3 shadow-[0_18px_70px_rgba(88,28,135,0.28)] backdrop-blur-xl">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <Link href="/" className="flex items-center gap-3 no-underline">
-                <span className="grid size-10 place-items-center rounded-md bg-up-ink text-sm font-black text-up-cream">
-                  U
-                </span>
+                <span className="text-2xl text-purple-600">•</span>
                 <span>
                   <span className="block text-base font-black leading-none tracking-tight">UpMySkills</span>
                   <span className="text-xs font-medium text-muted-foreground">Executable AI skills workspace</span>
                 </span>
+                <span className="text-2xl text-purple-600">•</span>
               </Link>
               <nav className="flex gap-1 overflow-x-auto">
                 {navItems.map((item) => (
@@ -40,7 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md px-3 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full px-3 text-sm font-light text-muted-foreground transition-colors hover:bg-purple-700 hover:text-white"
                     )}
                   >
                     <item.icon className="size-4" />

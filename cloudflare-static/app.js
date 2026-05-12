@@ -36,7 +36,14 @@ const domainMeta = {
 
 const state = {
   tools: [],
+  totalTools: 0,
   sources: [],
+  sourceCounts: {},
+  domainCounts: [],
+  domainCache: {},
+  featuredTools: [],
+  toolIndex: {},
+  allToolsLoaded: false,
   skippedCount: 0,
   generatedAt: "",
   query: "",
@@ -78,7 +85,47 @@ function domainFromSlug(slug) {
 }
 
 function toolBySlug(slug) {
-  return state.tools.find((tool) => tool.slug === slug || tool.id === slug);
+  return state.tools.find((tool) => tool.slug === slug || tool.id === slug) ||
+    Object.values(state.domainCache).flat().find((tool) => tool.slug === slug || tool.id === slug);
+}
+
+function loadingState(message = "Loading...") {
+  return `
+    <section class="loading card">
+      <div>
+        <div class="spinner"></div>
+        <p>${escapeHtml(message)}</p>
+      </div>
+    </section>
+  `;
+}
+
+async function fetchJson(path) {
+  const response = await fetch(path, { cache: "no-store" });
+  if (!response.ok) throw new Error(`Unable to load ${path} (${response.status})`);
+  return response.json();
+}
+
+function mergeTools(tools) {
+  const byId = new Map(state.tools.map((tool) => [tool.id, tool]));
+  for (const tool of tools) byId.set(tool.id, tool);
+  state.tools = Array.from(byId.values()).sort((a, b) => `${a.domain}${a.title}`.localeCompare(`${b.domain}${b.title}`));
+}
+
+async function ensureDomainTools(domain) {
+  if (state.domainCache[domain]) return state.domainCache[domain];
+  const payload = await fetchJson(`data/tools-${domainSlug(domain)}.json`);
+  const tools = (payload.tools || []).sort((a, b) => a.title.localeCompare(b.title));
+  state.domainCache[domain] = tools;
+  mergeTools(tools);
+  return tools;
+}
+
+async function ensureAllTools() {
+  if (state.allToolsLoaded) return state.tools;
+  await Promise.all(Object.keys(domainMeta).map((domain) => ensureDomainTools(domain)));
+  state.allToolsLoaded = true;
+  return state.tools;
 }
 
 function runs() {
@@ -112,7 +159,7 @@ function formatDate(value) {
 }
 
 function domainCount(domain) {
-  return state.tools.filter((tool) => tool.domain === domain).length;
+  return state.domainCounts.find((item) => item.domain === domain)?.count || state.domainCache[domain]?.length || 0;
 }
 
 function recentRuns(limit = 5) {
@@ -121,7 +168,8 @@ function recentRuns(limit = 5) {
 
 function matchingTools() {
   const query = state.query.trim().toLowerCase();
-  return state.tools.filter((tool) => {
+  const baseTools = state.domain === "All" ? state.tools : state.domainCache[state.domain] || [];
+  return baseTools.filter((tool) => {
     const domainOk = state.domain === "All" || tool.domain === state.domain;
     if (!domainOk) return false;
     if (!query) return true;
@@ -172,7 +220,7 @@ function toolCard(tool) {
 function statsHtml() {
   return `
     <div class="hero-panel">
-      <div class="metric"><strong>${state.tools.length.toLocaleString()}</strong><span>Executable tools extracted</span></div>
+      <div class="metric"><strong>${state.totalTools.toLocaleString()}</strong><span>Executable tools extracted</span></div>
       <div class="metric"><strong>${state.sources.length}</strong><span>Source repositories attributed</span></div>
       <div class="metric"><strong>${runs().length}</strong><span>Saved local generations</span></div>
     </div>
@@ -180,16 +228,23 @@ function statsHtml() {
 }
 
 function renderLanding() {
-  const featured = state.tools.slice(0, 6).map(toolCard).join("");
+  const featured = state.featuredTools.slice(0, 6).map(toolCard).join("");
   app.innerHTML = `
     <section class="hero">
       <div>
-        <p class="eyebrow">UpMySkills beta is live</p>
-        <h1>Run thousands of Claude and AI skills as real tools.</h1>
-        <p>UpMySkills turns GitHub skill repos into executable workflows with forms, generated outputs, saved history, Markdown export, and source attribution.</p>
+        <p class="eyebrow"><span>2026</span> Executable AI Skills Studio</p>
+        <h1>AI Skills, Ready to Run.</h1>
+        <h2>Built for Real Workflows.</h2>
+        <p>UpMySkills converts Claude and AI skill repositories into usable web tools with forms, outputs, history, Markdown export, search, filters, and attribution.</p>
         <div class="actions">
           <a class="button primary aurora-button" href="#/dashboard">Open dashboard <span aria-hidden="true">→</span></a>
           <a class="button dark" href="#/tools">Browse tools</a>
+        </div>
+        <div class="marquee-wrap">
+          <div class="marquee-track">
+            <span>SEO & GEO</span><span>∞</span><span>MARKETING</span><span>∞</span><span>DESIGN</span><span>∞</span><span>AGENTS</span><span>∞</span><span>RESEARCH</span><span>∞</span><span>ADVISORY</span><span>∞</span>
+            <span>SEO & GEO</span><span>∞</span><span>MARKETING</span><span>∞</span><span>DESIGN</span><span>∞</span><span>AGENTS</span><span>∞</span><span>RESEARCH</span><span>∞</span><span>ADVISORY</span><span>∞</span>
+          </div>
         </div>
       </div>
       ${statsHtml()}
@@ -260,6 +315,19 @@ function renderTools(domainLock = "") {
   `;
 }
 
+async function renderToolsRoute(domainLock = "") {
+  app.innerHTML = loadingState(domainLock ? `Loading ${domainLock} tools...` : "Loading tool library...");
+  if (domainLock) {
+    state.domain = domainLock;
+    await ensureDomainTools(domainLock);
+  } else if (state.domain === "All") {
+    await ensureAllTools();
+  } else {
+    await ensureDomainTools(state.domain);
+  }
+  renderTools(domainLock);
+}
+
 function refreshToolGrid() {
   const matched = matchingTools();
   const visible = matched.slice(0, 180);
@@ -327,6 +395,19 @@ function renderToolPage(tool) {
       </aside>
     </section>
   `;
+}
+
+async function renderToolRoute(slug) {
+  app.innerHTML = loadingState("Loading tool...");
+  let tool = toolBySlug(slug);
+  if (!tool) {
+    const indexedDomain = state.toolIndex[slug];
+    if (indexedDomain) {
+      await ensureDomainTools(indexedDomain);
+      tool = toolBySlug(slug);
+    }
+  }
+  return tool ? renderToolPage(tool) : (app.innerHTML = emptyState("Tool not found."));
 }
 
 function outputHtml(output) {
@@ -536,7 +617,7 @@ function renderHistory() {
 
 function renderSources() {
   const sourceRows = state.sources.map((source) => {
-    const count = state.tools.filter((tool) => tool.sourceRepo === source.name || source.url.endsWith(`/${tool.sourceRepo}`)).length;
+    const count = state.sourceCounts[source.name] || 0;
     return `
       <div class="card pad">
         <h3><a href="${escapeHtml(source.url)}" target="_blank" rel="noreferrer">${escapeHtml(source.name)}</a></h3>
@@ -557,7 +638,7 @@ function renderSources() {
       <div class="grid cards-2 section">${sourceRows}</div>
       <div class="card pad section">
         <h3>Ingestion quality</h3>
-        <p class="muted">${state.tools.length.toLocaleString()} tools extracted. ${state.skippedCount.toLocaleString()} files skipped because they were ambiguous, duplicate, or not usable as a web workflow.</p>
+        <p class="muted">${state.totalTools.toLocaleString()} tools extracted. ${state.skippedCount.toLocaleString()} files skipped because they were ambiguous, duplicate, or not usable as a web workflow.</p>
       </div>
     </section>
   `;
@@ -572,7 +653,7 @@ function renderSettings() {
       <div class="grid cards-3 section">
         <div class="card pad"><h3>Current provider</h3><p class="muted">Local browser runner</p></div>
         <div class="card pad"><h3>History storage</h3><p class="muted">Browser localStorage</p></div>
-        <div class="card pad"><h3>Generated tools</h3><p class="muted">${state.tools.length.toLocaleString()} executable workflows</p></div>
+        <div class="card pad"><h3>Generated tools</h3><p class="muted">${state.totalTools.toLocaleString()} executable workflows</p></div>
       </div>
     </section>
   `;
@@ -582,19 +663,18 @@ function emptyState(message) {
   return `<div class="output-empty card"><p class="muted">${escapeHtml(message)}</p></div>`;
 }
 
-function render() {
+async function render() {
   const parts = routeParts();
   state.output = null;
   if (!parts.length) return renderLanding();
   if (parts[0] === "dashboard") return renderDashboard();
-  if (parts[0] === "tools") return renderTools();
+  if (parts[0] === "tools") return renderToolsRoute();
   if (parts[0] === "domains") {
     const domain = domainFromSlug(parts[1] || "seo-geo") || "SEO & GEO";
-    return renderTools(domain);
+    return renderToolsRoute(domain);
   }
   if (parts[0] === "tool") {
-    const tool = toolBySlug(decodeURIComponent(parts.slice(1).join("/")));
-    return tool ? renderToolPage(tool) : (app.innerHTML = emptyState("Tool not found."));
+    return renderToolRoute(decodeURIComponent(parts.slice(1).join("/")));
   }
   if (parts[0] === "history") return renderHistory();
   if (parts[0] === "sources") return renderSources();
@@ -616,9 +696,14 @@ document.addEventListener("input", (event) => {
   }
 });
 
-document.addEventListener("change", (event) => {
+document.addEventListener("change", async (event) => {
   if (event.target?.id === "domainFilter") {
     state.domain = event.target.value;
+    if (state.domain === "All") {
+      await ensureAllTools();
+    } else {
+      await ensureDomainTools(state.domain);
+    }
     refreshToolGrid();
   }
 });
@@ -652,14 +737,18 @@ document.addEventListener("click", async (event) => {
 
 window.addEventListener("hashchange", render);
 
-fetch("tools.json", { cache: "no-store" })
+fetch("data/manifest.json", { cache: "no-store" })
   .then((response) => {
-    if (!response.ok) throw new Error(`Unable to load tools.json (${response.status})`);
+    if (!response.ok) throw new Error(`Unable to load manifest (${response.status})`);
     return response.json();
   })
   .then((payload) => {
-    state.tools = (payload.tools || []).sort((a, b) => `${a.domain}${a.title}`.localeCompare(`${b.domain}${b.title}`));
+    state.totalTools = payload.toolsCount || 0;
     state.sources = payload.sources || [];
+    state.sourceCounts = payload.sourceCounts || {};
+    state.domainCounts = payload.domainCounts || [];
+    state.featuredTools = payload.featuredTools || [];
+    state.toolIndex = payload.toolIndex || [];
     state.skippedCount = payload.skippedCount || 0;
     state.generatedAt = payload.generatedAt || "";
     render();

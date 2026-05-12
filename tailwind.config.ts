@@ -52,6 +52,15 @@ const config: Config = {
       },
       boxShadow: {
         premium: "0 22px 70px rgba(24, 24, 23, 0.13)"
+      },
+      keyframes: {
+        marquee: {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" }
+        }
+      },
+      animation: {
+        marquee: "marquee 18s linear infinite"
       }
     }
   },
