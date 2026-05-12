@@ -216,7 +216,7 @@ function concreteDeliverable(domain: string, input: Record<string, string>) {
 
 export const localProvider: LlmProvider = {
   id: "local",
-  label: "Local deterministic generator",
+  label: "Local deterministic workflow",
   async generate(request: GenerateRequest): Promise<GeneratedOutput> {
     const { tool, input } = request;
     const project = compact(input.projectName);

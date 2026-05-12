@@ -253,7 +253,7 @@ function toolCard(tool) {
         <h3>${escapeHtml(tool.title)}</h3>
         <p class="muted small">${escapeHtml(tool.description)}</p>
         <div class="pill-row">${tags}</div>
-        <p class="source small muted">${escapeHtml(shortSource(tool.sourceRepo))}<br>${escapeHtml(tool.sourcePath || "Generated workflow wrapper")}</p>
+        <p class="source small muted">${escapeHtml(shortSource(tool.sourceRepo))}<br>${escapeHtml(tool.sourcePath || "Workflow wrapper")}</p>
       </div>
     </a>
   `;
@@ -264,7 +264,7 @@ function statsHtml() {
     <div class="hero-panel">
       <div class="metric"><strong>${state.totalTools.toLocaleString()}</strong><span>Executable tools extracted</span></div>
       <div class="metric"><strong>${state.sources.length}</strong><span>Source repositories attributed</span></div>
-      <div class="metric"><strong>${runs().length}</strong><span>Saved local generations</span></div>
+      <div class="metric"><strong>${runs().length}</strong><span>Saved tool runs</span></div>
     </div>
   `;
 }
@@ -277,7 +277,7 @@ function renderLanding() {
         <p class="eyebrow"><span>2026</span> Executable AI Skills Studio</p>
         <h1>AI Skills, Ready to Run.</h1>
         <h2>Built for Real Workflows.</h2>
-        <p>UpMySkills converts Claude and AI skill repositories into usable web tools with forms, outputs, history, Markdown export, search, filters, and attribution.</p>
+        <p>UpMySkills converts Claude and AI skill repositories into usable web tools with structured forms, scoring, exports, history, search, filters, and attribution.</p>
         <div class="actions">
           <a class="button primary aurora-button" href="#/dashboard">Open dashboard <span aria-hidden="true">→</span></a>
           <a class="button dark" href="#/tools">Browse tools</a>
@@ -311,7 +311,7 @@ function renderDashboard() {
         <div class="card pad">
           <p class="section-kicker">Dashboard</p>
           <h1>UpMySkills workspace</h1>
-          <p class="muted">Browse domains, launch high-signal tools, and continue saved generations. This Cloudflare build runs locally in the browser, so it has no paid backend dependency.</p>
+          <p class="muted">Browse domains, launch high-signal tools, and continue saved runs. This Cloudflare build runs locally in the browser, so it has no paid backend dependency.</p>
           <div class="actions">
             <a class="button primary" href="#/tools">Search all tools</a>
             <a class="button" href="#/sources">View attribution</a>
@@ -321,7 +321,7 @@ function renderDashboard() {
       </div>
       <aside class="card pad">
         <p class="section-kicker">Recent history</p>
-        ${recent.length ? recent.map(historyCard).join("") : `<div class="output-empty"><p class="muted">No saved generations yet. Run any tool and it will appear here.</p></div>`}
+        ${recent.length ? recent.map(historyCard).join("") : `<div class="output-empty"><p class="muted">No saved tool runs yet. Run any tool and it will appear here.</p></div>`}
       </aside>
     </section>
   `;
@@ -455,12 +455,12 @@ function renderToolPage(tool) {
         <p class="muted">${escapeHtml(tool.description)}</p>
         <div class="source-box small">
           <strong>Source:</strong> <a href="${escapeHtml(sourceUrl(tool.sourceRepo))}" target="_blank" rel="noreferrer">${escapeHtml(shortSource(tool.sourceRepo))}</a><br>
-          <strong>Path:</strong> ${escapeHtml(tool.sourcePath || "Generated wrapper")}<br>
+          <strong>Path:</strong> ${escapeHtml(tool.sourcePath || "Workflow wrapper")}<br>
           <strong>License:</strong> ${escapeHtml(tool.license || "Unknown")}
         </div>
         <div class="form-grid section">${fields}</div>
         <div class="actions">
-          <button class="primary" type="submit">${output ? "Regenerate" : "Generate output"}</button>
+          <button class="primary" type="submit">${output ? "Run again" : "Run tool"}</button>
           <button type="button" data-action="sample" data-tool-id="${escapeHtml(tool.id)}">Load sample</button>
           <a class="button" href="#/tools">Back to tools</a>
         </div>
@@ -468,15 +468,18 @@ function renderToolPage(tool) {
       <aside class="card pad output-panel">
         <div class="actions" style="margin-top:0; justify-content:space-between;">
           <div>
-            <p class="section-kicker">Generated output</p>
+            <p class="section-kicker">Tool result</p>
             <h2>${output ? escapeHtml(output.summary) : "Ready to run"}</h2>
           </div>
           <div class="actions" style="margin-top:0;">
             <button type="button" data-action="copy" ${output ? "" : "disabled"}>Copy</button>
-            <button type="button" data-action="export" ${output ? "" : "disabled"}>Export MD</button>
+            <button type="button" data-action="export" data-format="markdown" ${output ? "" : "disabled"}>MD</button>
+            <button type="button" data-action="export" data-format="json" ${output ? "" : "disabled"}>JSON</button>
+            <button type="button" data-action="export" data-format="csv" ${output ? "" : "disabled"}>CSV</button>
+            <button type="button" data-action="export" data-format="html" ${output ? "" : "disabled"}>HTML</button>
           </div>
         </div>
-        ${output ? outputHtml(output) : `<div class="output-empty"><p class="muted">Fill the form and generate. Output includes workflow steps, recommendations, checklist, Markdown deliverable, and attribution.</p></div>`}
+        ${output ? outputHtml(output) : `<div class="output-empty"><p class="muted">Fill the form and run the workflow. Results include validation, score, issues, recommendations, detailed analysis, checklist, exports, and attribution.</p></div>`}
       </aside>
     </section>
   `;
@@ -493,28 +496,116 @@ async function renderToolRoute(slug) {
 }
 
 function outputHtml(output) {
+  const score = output.score ? `
+    <div class="score-card">
+      <div>
+        <p class="section-kicker">${escapeHtml(output.score.label || "Score")}</p>
+        <strong>${escapeHtml(output.score.value)}/${escapeHtml(output.score.max || 100)}</strong>
+      </div>
+      <span class="pill strong">${escapeHtml(output.score.status || output.status || "ready")}</span>
+    </div>
+    <div class="score-breakdown">
+      ${(output.score.breakdown || []).map((item) => `
+        <div class="metric compact">
+          <strong>${escapeHtml(item.score)}/${escapeHtml(item.max)}</strong>
+          <span>${escapeHtml(item.label)}<br>${escapeHtml(item.detail || "")}</span>
+        </div>
+      `).join("")}
+    </div>
+  ` : "";
+
   return `
     <div class="output-section">
-      <h3>Workflow</h3>
-      <ol>${output.workflow.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>
+      <h3>Summary</h3>
+      <p>${escapeHtml(output.summary)}</p>
+    </div>
+    ${score}
+    <div class="output-section">
+      <h3>Key findings</h3>
+      <ul>${(output.keyFindings || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
     </div>
     <div class="output-section">
-      <h3>Recommendations</h3>
-      <ul>${output.recommendations.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+      <h3>Issues</h3>
+      ${output.issues?.length ? output.issues.map((item) => `
+        <div class="result-card">
+          <div class="pill-row"><span class="pill strong">${escapeHtml(item.severity)}</span><span class="pill">${escapeHtml(item.category)}</span></div>
+          <h4>${escapeHtml(item.title)}</h4>
+          <p class="muted small">${escapeHtml(item.detail)}</p>
+          <p class="small">${escapeHtml(item.fix)}</p>
+        </div>
+      `).join("") : `<p class="muted">No blocking issues detected from the supplied inputs.</p>`}
     </div>
     <div class="output-section">
-      <h3>Checklist</h3>
-      <ul>${output.checklist.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
-    </div>
-    ${output.deliverable ? `
-      <div class="output-section">
-        <h3>Concrete deliverable</h3>
-        <pre>${escapeHtml(output.deliverable)}</pre>
+      <h3>Prioritized recommendations</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Priority</th><th>Recommendation</th><th>Impact</th><th>Effort</th><th>Next step</th></tr></thead>
+          <tbody>${(output.recommendations || []).map((item) => `<tr><td>${escapeHtml(item.priority)}</td><td>${escapeHtml(item.title)}<br><span class="muted small">${escapeHtml(item.rationale || "")}</span></td><td>${escapeHtml(item.impact)}/5</td><td>${escapeHtml(item.effort)}/5</td><td>${escapeHtml(item.nextStep)}</td></tr>`).join("")}</tbody>
+        </table>
       </div>
-    ` : ""}
+    </div>
+    ${(output.analysisSections || []).map(analysisSectionHtml).join("")}
+    ${timelineHtml(output)}
+    ${matrixHtml(output)}
     <div class="output-section">
-      <h3>Markdown deliverable</h3>
-      <pre>${escapeHtml(output.markdown)}</pre>
+      <h3>Action checklist</h3>
+      <ul>${(output.checklist || []).map((item) => `<li>${escapeHtml(item.label || item)}${item.owner ? ` <span class="muted small">- ${escapeHtml(item.owner)}</span>` : ""}</li>`).join("")}</ul>
+    </div>
+    <div class="output-section source-box small">
+      <h3>Source attribution</h3>
+      <p>${escapeHtml(output.attribution?.sourceRepo || "")}${output.attribution?.sourcePath ? `/${escapeHtml(output.attribution.sourcePath)}` : ""}</p>
+      ${output.attribution?.license ? `<p>License: ${escapeHtml(output.attribution.license)}</p>` : ""}
+    </div>
+  `;
+}
+
+function analysisSectionHtml(section) {
+  if (section.type === "table" && section.table) {
+    return `
+      <div class="output-section">
+        <h3>${escapeHtml(section.title)}</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>${section.table.columns.map((column) => `<th>${escapeHtml(column)}</th>`).join("")}</tr></thead>
+            <tbody>${section.table.rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+  if (section.type === "code" || section.type === "json") {
+    return `<div class="output-section"><h3>${escapeHtml(section.title)}</h3><pre>${escapeHtml(section.content || "")}</pre></div>`;
+  }
+  return `<div class="output-section"><h3>${escapeHtml(section.title)}</h3><ul>${(section.items || [section.content || ""]).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></div>`;
+}
+
+function timelineHtml(output) {
+  if (!output.timeline?.length) return "";
+  return `
+    <div class="output-section">
+      <h3>Timeline</h3>
+      <div class="timeline-grid">${output.timeline.map((item) => `
+        <div class="result-card">
+          <p class="section-kicker">${escapeHtml(item.period)}</p>
+          <h4>${escapeHtml(item.title)}</h4>
+          <ul>${item.actions.map((action) => `<li>${escapeHtml(action)}</li>`).join("")}</ul>
+        </div>
+      `).join("")}</div>
+    </div>
+  `;
+}
+
+function matrixHtml(output) {
+  if (!output.matrix?.length) return "";
+  return `
+    <div class="output-section">
+      <h3>Matrix</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Option</th><th>Score</th><th>Rationale</th><th>Recommendation</th></tr></thead>
+          <tbody>${output.matrix.map((item) => `<tr><td>${escapeHtml(item.option)}</td><td>${escapeHtml(item.score)}</td><td>${escapeHtml(item.rationale)}</td><td>${escapeHtml(item.recommendation)}</td></tr>`).join("")}</tbody>
+        </table>
+      </div>
     </div>
   `;
 }
@@ -778,53 +869,442 @@ function checklistFor(tool) {
 
 function markdownFor(tool, input, output) {
   const inputLines = Object.entries(input).map(([key, value]) => `- ${key}: ${value || "Not specified"}`).join("\n");
+  const issueLines = output.issues?.length ? output.issues.map((item) => `- ${item.severity.toUpperCase()}: ${item.title} - ${item.fix}`).join("\n") : "- No blocking issues detected.";
+  const recommendationLines = (output.recommendations || []).map((item) => `- ${item.priority}: ${item.title} (impact ${item.impact}/5, effort ${item.effort}/5) - ${item.nextStep}`).join("\n");
+  const checklistLines = (output.checklist || []).map((item) => `- [ ] ${item.label || item}`).join("\n");
+  const analysisLines = (output.analysisSections || []).map((section) => {
+    if (section.type === "table" && section.table) {
+      return [
+        `### ${section.title}`,
+        `| ${section.table.columns.join(" | ")} |`,
+        `| ${section.table.columns.map(() => "---").join(" | ")} |`,
+        ...section.table.rows.map((row) => `| ${row.map((cell) => String(cell).replaceAll("|", "/")).join(" | ")} |`)
+      ].join("\n");
+    }
+    if (section.items?.length) return [`### ${section.title}`, section.items.map((item) => `- ${item}`).join("\n")].join("\n");
+    return [`### ${section.title}`, section.content || ""].join("\n");
+  }).join("\n\n");
   return `# ${tool.title}
 
 ## Summary
 ${output.summary}
 
+${output.score ? `Score: ${output.score.value}/${output.score.max} (${output.score.status})` : ""}
+
 ## Inputs
 ${inputLines}
 
 ## Workflow
-${output.workflow.map((step, index) => `${index + 1}. ${step}`).join("\n")}
+${(output.workflow || []).map((step, index) => `${index + 1}. ${step}`).join("\n")}
+
+## Key Findings
+${(output.keyFindings || []).map((item) => `- ${item}`).join("\n")}
+
+## Issues
+${issueLines}
 
 ## Recommendations
-${output.recommendations.map((item) => `- ${item}`).join("\n")}
+${recommendationLines}
 
-## Concrete Deliverable
-${output.deliverable}
+## Detailed Analysis
+${analysisLines}
 
 ## Execution Checklist
-${output.checklist.map((item) => `- [ ] ${item}`).join("\n")}
+${checklistLines}
 
 ## Attribution
 Source: ${shortSource(tool.sourceRepo)}
-Path: ${tool.sourcePath || "Generated wrapper"}
+Path: ${tool.sourcePath || "Workflow wrapper"}
 License: ${tool.license || "Unknown"}
 
-Generated by UpMySkills.`;
+Built by UpMySkills.`;
+}
+
+function numeric(input, key) {
+  const value = Number(String(input[key] || "").replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(value) ? value : 0;
+}
+
+function wordCount(value) {
+  return (String(value || "").toLowerCase().match(/[a-z0-9]+/g) || []).length;
+}
+
+function outputStatus(score) {
+  if (score >= 85) return "excellent";
+  if (score >= 70) return "good";
+  if (score >= 50) return "warning";
+  return "poor";
+}
+
+function buildScore(label, breakdown) {
+  const max = breakdown.reduce((sum, item) => sum + item.max, 0) || 100;
+  const value = Math.max(0, Math.min(100, Math.round((breakdown.reduce((sum, item) => sum + item.score, 0) / max) * 100)));
+  return { label, value, max: 100, status: outputStatus(value), breakdown };
+}
+
+function makeIssue(id, title, severity, category, detail, fix, impact = 3, effort = 2) {
+  return { id, title, severity, category, detail, fix, impact, effort };
+}
+
+function makeRec(item, index) {
+  const impact = item.impact || 3;
+  const effort = item.effort || 2;
+  return {
+    id: `rec-${index + 1}`,
+    title: item.fix,
+    priority: impact >= 5 && effort <= 2 ? "P0" : impact >= 4 ? "P1" : impact >= 3 ? "P2" : "P3",
+    impact,
+    effort,
+    rationale: item.detail,
+    nextStep: item.fix
+  };
+}
+
+function checklistItems(items, owner = "Owner") {
+  return items.map((label, index) => ({ id: `check-${index + 1}`, label, owner, status: "todo" }));
+}
+
+function tableSection(key, title, columns, rows) {
+  return { key, title, type: "table", table: { columns, rows } };
+}
+
+function listSection(key, title, items) {
+  return { key, title, type: "list", items };
+}
+
+function codeSection(key, title, content) {
+  return { key, title, type: "code", content };
+}
+
+function finishToolOutput(tool, input, rendererType, breakdown, issues, sections, checklist, timeline, matrix) {
+  const score = buildScore(tool.title, breakdown);
+  const recommendations = issues.length ? issues.slice().sort((a, b) => (b.impact || 0) - (a.impact || 0)).slice(0, 8).map(makeRec) : [{
+    id: "rec-1",
+    title: "Keep the current workflow and monitor for regressions",
+    priority: "P2",
+    impact: 3,
+    effort: 1,
+    rationale: "No blocking issues were detected from the supplied inputs.",
+    nextStep: "Schedule the next review after new data is available."
+  }];
+  const output = {
+    toolId: tool.id,
+    rendererType,
+    summary: `${tool.title} completed ${issues.length} checks with ${recommendations.length} prioritized actions.`,
+    status: score.status,
+    score,
+    keyFindings: issues.length ? issues.slice(0, 4).map((item) => `${item.severity.toUpperCase()}: ${item.title}`) : [`${tool.title} passed the core deterministic checks.`],
+    issues,
+    recommendations,
+    analysisSections: sections,
+    checklist,
+    timeline,
+    matrix,
+    exports: {},
+    attribution: { sourceRepo: tool.sourceRepo, sourcePath: tool.sourcePath, license: tool.license },
+    workflow: tool.workflowSteps || []
+  };
+  output.markdown = markdownFor(tool, input, output);
+  output.exports = {
+    markdown: output.markdown,
+    json: JSON.stringify(output, null, 2),
+    csv: csvForOutput(output),
+    html: htmlForOutput(output)
+  };
+  return output;
+}
+
+function csvForOutput(output) {
+  const rows = [["type", "priority_or_severity", "title", "impact", "effort", "next_step_or_fix"]];
+  for (const item of output.recommendations || []) rows.push(["recommendation", item.priority, item.title, item.impact, item.effort, item.nextStep]);
+  for (const item of output.issues || []) rows.push(["issue", item.severity, item.title, item.impact || "", item.effort || "", item.fix]);
+  return rows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(",")).join("\n");
+}
+
+function htmlForOutput(output) {
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(output.summary)}</title></head><body><h1>${escapeHtml(output.summary)}</h1><p>Score: ${output.score?.value || ""}/${output.score?.max || ""}</p><h2>Issues</h2><ul>${(output.issues || []).map((item) => `<li>${escapeHtml(item.severity)}: ${escapeHtml(item.title)} - ${escapeHtml(item.fix)}</li>`).join("")}</ul><h2>Recommendations</h2><ul>${(output.recommendations || []).map((item) => `<li>${escapeHtml(item.priority)}: ${escapeHtml(item.title)}</li>`).join("")}</ul></body></html>`;
 }
 
 function generateOutput(tool, input) {
-  const project = projectName(input, tool);
-  const recommendations = generatedRecommendations(tool, input);
-  const output = {
-    toolId: tool.id,
-    summary: `${tool.title} generated a ${tool.domain} deliverable for ${project}.`,
-    workflow: workflowFor(tool, input),
-    recommendations,
-    deliverable: concreteDeliverable(tool, input),
-    checklist: checklistFor(tool),
-    attribution: {
-      sourceRepo: tool.sourceRepo,
-      sourcePath: tool.sourcePath,
-      license: tool.license
-    },
-    markdown: ""
-  };
-  output.markdown = markdownFor(tool, input, output);
-  return output;
+  const slug = tool.slug;
+  if (slug === "seo-and-geo-technical-seo-audit") return seoToolOutput(tool, input);
+  if (slug === "seo-and-geo-ai-search-citation-optimizer") return geoToolOutput(tool, input);
+  if (slug === "marketing-seo-campaign-builder") return campaignToolOutput(tool, input);
+  if (slug === "marketing-ads-multi-platform-paid-advertising-audit-and-optimization") return paidAdsToolOutput(tool, input);
+  if (slug === "branding-and-design-brand-identity-generator") return brandToolOutput(tool, input);
+  if (slug === "branding-and-design-design-system-generator") return designSystemToolOutput(tool, input);
+  if (slug === "engineering-and-ai-agent-backend-architecture-reviewer") return architectureToolOutput(tool, input);
+  if (slug === "engineering-and-ai-agent-security-audit-assistant") return securityToolOutput(tool, input);
+  if (slug === "ai-research-experiment-planner") return researchToolOutput(tool, input);
+  if (slug === "c-level-advisory-board-memo-generator") return boardMemoToolOutput(tool, input);
+  return genericToolOutput(tool, input);
+}
+
+function seoToolOutput(tool, input) {
+  const title = input.pageTitle || "";
+  const meta = input.metaDescription || "";
+  const content = input.content || "";
+  const keyword = input.targetKeyword || "";
+  const headings = input.headings || "";
+  const robots = String(input.robotsSetting || "").toLowerCase();
+  const h1 = (headings.match(/\bh1\s*:/gi) || []).length;
+  const h2 = (headings.match(/\bh2\s*:/gi) || []).length;
+  const wc = wordCount(content);
+  const issues = [];
+  if (title.length < 30 || title.length > 65) issues.push(makeIssue("title", "Title length is outside ideal range", "medium", "Metadata", `${title.length} characters detected.`, "Rewrite title to 45-60 characters with the target keyword.", 4, 2));
+  if (meta.length < 120 || meta.length > 165) issues.push(makeIssue("meta", "Meta description length is weak", "medium", "Metadata", `${meta.length} characters detected.`, "Rewrite meta description to 140-160 characters.", 4, 2));
+  if (keyword && !title.toLowerCase().includes(keyword.toLowerCase())) issues.push(makeIssue("keyword-title", "Target keyword missing from title", "high", "Relevance", `${keyword} not found in title.`, "Add the target keyword naturally to the title.", 5, 1));
+  if (h1 !== 1) issues.push(makeIssue("h1", "Page should have exactly one H1", "high", "Headings", `${h1} H1 headings detected.`, "Use one descriptive H1 and demote duplicates.", 5, 2));
+  if (wc < 300) issues.push(makeIssue("thin-content", "Content is thin", "high", "Content", `${wc} words detected.`, "Expand the page with evidence, examples, FAQs, and comparison details.", 5, 3));
+  if (robots.includes("noindex") || robots.includes("blocked")) issues.push(makeIssue("robots", "Indexing is blocked", "critical", "Indexability", `Robots: ${robots}`, "Change robots to index, follow unless intentionally excluded.", 5, 1));
+  if (!input.canonicalUrl) issues.push(makeIssue("canonical", "Canonical URL is missing", "medium", "Indexability", "No canonical supplied.", "Set a self-referencing canonical URL.", 3, 1));
+  if (!input.schemaMarkup) issues.push(makeIssue("schema", "Schema markup is missing", "medium", "Structured data", "No schema supplied.", "Add Service, Article, FAQ, Product, or Organization JSON-LD.", 3, 2));
+  const breakdown = [
+    { key: "metadata", label: "Metadata", score: (title.length >= 30 && title.length <= 65 ? 10 : 4) + (meta.length >= 120 && meta.length <= 165 ? 10 : 4), max: 20, detail: `Title ${title.length}, meta ${meta.length}.` },
+    { key: "indexability", label: "Indexability", score: (!robots.includes("noindex") && !robots.includes("blocked") ? 12 : 0) + (input.canonicalUrl ? 8 : 0), max: 20, detail: `Robots ${robots || "unknown"}.` },
+    { key: "content", label: "Content relevance", score: (content.toLowerCase().includes(keyword.toLowerCase()) ? 10 : 3) + (wc >= 300 ? 10 : 3) + (meta.toLowerCase().includes(keyword.toLowerCase()) ? 5 : 1), max: 25, detail: `${wc} words.` },
+    { key: "structure", label: "Heading structure", score: (h1 === 1 ? 12 : 4) + (h2 >= 2 ? 8 : 2), max: 20, detail: `${h1} H1, ${h2} H2.` },
+    { key: "schema", label: "Schema", score: input.schemaMarkup ? 15 : 0, max: 15, detail: input.schemaMarkup ? "Present." : "Missing." }
+  ];
+  return finishToolOutput(tool, input, "audit", breakdown, issues, [
+    tableSection("signals", "SEO signal dashboard", ["Signal", "Value"], [["Title length", title.length], ["Meta length", meta.length], ["Word count", wc], ["H1 count", h1], ["H2 count", h2], ["Robots", robots || "unknown"], ["Canonical", input.canonicalUrl || "missing"]]),
+    codeSection("schema", "Recommended JSON-LD draft", `{"@context":"https://schema.org","@type":"Service","name":"${title.replaceAll('"', "'")}","url":"${input.url || ""}","description":"${meta.replaceAll('"', "'")}"}`)
+  ], checklistItems(["Fix critical indexability issues.", "Rewrite metadata where flagged.", "Normalize heading hierarchy.", "Add schema JSON-LD.", "Re-crawl after publishing."], "SEO"));
+}
+
+function geoToolOutput(tool, input) {
+  const content = input.content || "";
+  const questions = String(input.targetQuestions || "").split(/\n+/).filter(Boolean);
+  const entities = String(input.entityTerms || "").split(/[,\n]+/).filter(Boolean);
+  const citations = String(input.citations || "").split(/\n+/).filter(Boolean);
+  const answered = questions.filter((q) => content.toLowerCase().includes(q.toLowerCase().split(/\s+/).slice(0, 4).join(" "))).length;
+  const entityHits = entities.filter((e) => content.toLowerCase().includes(e.trim().toLowerCase())).length;
+  const issues = [];
+  if (questions.length && answered / questions.length < 0.5) issues.push(makeIssue("answers", "Target questions need direct answer blocks", "high", "Answer coverage", `${answered}/${questions.length} questions appear answered.`, "Add concise answers under each target question.", 5, 2));
+  if (citations.length < 2) issues.push(makeIssue("citations", "Citation support is thin", "high", "Citations", `${citations.length} citations supplied.`, "Add at least 3 source-backed facts or citations.", 5, 2));
+  if (entities.length && entityHits / entities.length < 0.6) issues.push(makeIssue("entities", "Entity coverage is incomplete", "medium", "Entities", `${entityHits}/${entities.length} entities found.`, "Add missing entities with context.", 4, 2));
+  if (!input.schemaMarkup) issues.push(makeIssue("schema", "Schema is missing", "medium", "Schema", "No structured data supplied.", "Add FAQPage, Article, Organization, Product, or HowTo JSON-LD.", 3, 2));
+  const breakdown = [
+    { key: "answers", label: "Answer coverage", score: questions.length ? Math.round((answered / questions.length) * 30) : 10, max: 30, detail: `${answered}/${questions.length || 1} covered.` },
+    { key: "citations", label: "Citation readiness", score: Math.min(25, citations.length * 8), max: 25, detail: `${citations.length} citations.` },
+    { key: "entities", label: "Entity coverage", score: entities.length ? Math.round((entityHits / entities.length) * 20) : 8, max: 20, detail: `${entityHits}/${entities.length || 1} found.` },
+    { key: "schema", label: "Schema readiness", score: input.schemaMarkup ? 15 : 0, max: 15, detail: input.schemaMarkup ? "Present." : "Missing." },
+    { key: "format", label: "Extractability", score: /(\n-|\n\d+\.|\|)/.test(content) ? 10 : 4, max: 10, detail: "Checks lists, tables, snippets." }
+  ];
+  return finishToolOutput(tool, input, "optimizer", breakdown, issues, [
+    tableSection("coverage", "AI answer readiness", ["Metric", "Value"], [["Questions covered", `${answered}/${questions.length}`], ["Entity hits", `${entityHits}/${entities.length}`], ["Citations", citations.length], ["Schema", input.schemaMarkup ? "present" : "missing"]]),
+    listSection("snippets", "Answer snippet plan", questions.slice(0, 6).map((q) => `Create a 40-70 word direct answer for: ${q}`))
+  ], checklistItems(["Add direct answer blocks.", "Attach source-backed facts.", "Add schema JSON-LD.", "Add entity definitions.", "Re-test in AI search surfaces."], "SEO"));
+}
+
+function campaignToolOutput(tool, input) {
+  const budget = numeric(input, "budget");
+  const duration = Math.max(1, numeric(input, "duration"));
+  const channels = String(input.channels || "").split(/[,\n]+/).map((item) => item.trim()).filter(Boolean);
+  const issues = [];
+  if (budget < 1000) issues.push(makeIssue("budget", "Budget may be too low for multi-channel learning", "medium", "Budget", `$${budget} supplied.`, "Start with one primary paid channel plus owned channels.", 4, 1));
+  if (channels.length < 2) issues.push(makeIssue("channels", "Campaign needs at least two channels", "medium", "Channel mix", `${channels.length} channel supplied.`, "Use one acquisition channel and one nurture channel.", 3, 1));
+  if (!input.offer) issues.push(makeIssue("offer", "Offer is missing", "high", "Positioning", "No offer supplied.", "Define one measurable offer before launch.", 5, 1));
+  const paid = channels.filter((c) => /ads|google|meta|linkedin|tiktok|paid/i.test(c));
+  const paidShare = paid.length ? 0.55 : 0.25;
+  const rows = channels.map((c) => {
+    const isPaid = paid.includes(c);
+    const pool = isPaid ? budget * paidShare : budget * (1 - paidShare);
+    const count = isPaid ? paid.length || 1 : channels.length - paid.length || 1;
+    return [c, `$${Math.round(pool / count).toLocaleString()}`, isPaid ? "Acquisition" : "Nurture"];
+  });
+  const breakdown = [
+    { key: "positioning", label: "Positioning", score: ["product", "audience", "price", "offer", "goal"].filter((k) => input[k]).length * 5, max: 25, detail: "Product, audience, price, offer, goal." },
+    { key: "channel", label: "Channel fit", score: Math.min(25, channels.length * 7), max: 25, detail: `${channels.length} channels.` },
+    { key: "budget", label: "Budget feasibility", score: budget >= 5000 ? 20 : budget >= 1000 ? 12 : 6, max: 20, detail: `$${budget} over ${duration} days.` },
+    { key: "measurement", label: "Measurement", score: input.goal ? 15 : 5, max: 15, detail: input.goal || "No goal." },
+    { key: "execution", label: "Execution", score: duration >= 14 ? 15 : 8, max: 15, detail: `${duration} days.` }
+  ];
+  return finishToolOutput(tool, input, "campaign", breakdown, issues, [
+    tableSection("budget", "Channel budget allocation", ["Channel", "Budget", "Stage"], rows),
+    tableSection("kpis", "KPI targets", ["Metric", "Target"], [["Primary goal", input.goal], ["Daily budget", `$${Math.round(budget / duration).toLocaleString()}`], ["Qualified lead target", Math.max(10, Math.round(budget / 250))], ["Review cadence", "Twice weekly"]]),
+    tableSection("angles", "Ad angle matrix", ["Angle", "Hook", "Proof"], [["Pain", `Stop losing ${input.audience || "buyers"} to unclear positioning`, "Problem-aware proof"], ["Outcome", `Reach ${String(input.goal || "growth").toLowerCase()} faster with ${input.product || "the product"}`, "Metric or case study"], ["Risk reversal", input.offer || "Low-friction offer", "Guarantee, trial, or demo"]])
+  ], checklistItems(["Confirm tracking and UTMs.", "Publish focused landing page.", "Launch first creative set.", "Review lead quality within 72 hours.", "Move spend to winning channel."], "Marketing"), [
+    { period: "Week 1", title: "Foundation", actions: ["Finalize offer and tracking.", "Build landing page and creative."] },
+    { period: "Week 2", title: "Launch tests", actions: ["Launch first channel batch.", "Review CTR, CVR, lead quality."] },
+    { period: "Week 3", title: "Optimize", actions: ["Pause weak hooks.", "Move budget to winners."] },
+    { period: "Week 4", title: "Scale or learn", actions: ["Scale best channel.", "Write learning memo."] }
+  ]);
+}
+
+function paidAdsToolOutput(tool, input) {
+  const ctr = numeric(input, "ctr");
+  const cvr = numeric(input, "conversionRate");
+  const roas = numeric(input, "roas");
+  const tracking = input.trackingStatus || "Unknown";
+  const creativeCount = numeric(input, "creativeCount");
+  const issues = [];
+  if (ctr < 1) issues.push(makeIssue("ctr", "CTR is below healthy benchmark", "medium", "Creative", `${ctr}% CTR supplied.`, "Refresh hooks and tighten audience.", 4, 2));
+  if (cvr < 2) issues.push(makeIssue("cvr", "Conversion rate is low", "high", "Conversion", `${cvr}% CVR supplied.`, "Audit landing message match, proof, and form friction.", 5, 3));
+  if (/partial|broken|unknown/i.test(tracking)) issues.push(makeIssue("tracking", "Tracking is not reliable", "critical", "Measurement", `Tracking status: ${tracking}.`, "Fix pixels, conversion events, UTMs, and attribution before scaling.", 5, 2));
+  if (creativeCount < 6) issues.push(makeIssue("creative", "Creative volume is too low", "medium", "Creative", `${creativeCount} active creatives.`, "Run at least 6-10 active variants.", 3, 2));
+  if (roas && roas < 1.5) issues.push(makeIssue("roas", "ROAS is below scaling threshold", "high", "Efficiency", `${roas} ROAS supplied.`, "Pause weak segments and focus on highest-intent audiences.", 5, 2));
+  const breakdown = [
+    { key: "efficiency", label: "Media efficiency", score: (ctr >= 1.5 ? 10 : 5) + (cvr >= 3 ? 10 : 4) + (roas >= 2 ? 15 : 6), max: 35, detail: `CTR ${ctr}%, CVR ${cvr}%, ROAS ${roas || "n/a"}.` },
+    { key: "tracking", label: "Tracking health", score: /complete/i.test(tracking) ? 25 : /partial/i.test(tracking) ? 12 : 4, max: 25, detail: tracking },
+    { key: "creative", label: "Creative coverage", score: creativeCount >= 10 ? 20 : creativeCount >= 6 ? 14 : 6, max: 20, detail: `${creativeCount} creatives.` },
+    { key: "landing", label: "Landing conversion", score: numeric(input, "landingPageConversion") >= 5 ? 20 : 10, max: 20, detail: `${numeric(input, "landingPageConversion") || 0}% landing CVR.` }
+  ];
+  return finishToolOutput(tool, input, "audit", breakdown, issues, [
+    tableSection("kpis", "Paid ads KPI dashboard", ["Metric", "Value"], [["Monthly spend", `$${numeric(input, "monthlySpend").toLocaleString()}`], ["CTR", `${ctr}%`], ["CVR", `${cvr}%`], ["CPA", `$${numeric(input, "cpa")}`], ["ROAS", roas || "n/a"], ["Tracking", tracking], ["Creatives", creativeCount]]),
+    tableSection("queue", "Optimization queue", ["Area", "Action"], [["Tracking", "Fix measurement before scaling."], ["Creative", "Test new hooks and formats."], ["Landing page", "Improve message match and proof."], ["Budget", "Shift spend to segments above target CPA."]])
+  ], checklistItems(["Fix tracking gaps.", "Pause high-CPA ad sets.", "Launch 6 new creative variants.", "Audit landing page.", "Review budget every 72 hours."], "Growth"));
+}
+
+function brandToolOutput(tool, input) {
+  const personality = String(input.personality || "").toLowerCase();
+  const archetype = /trust|safe|reliable|foundation/.test(personality) ? "Sage/Caregiver" : /bold|rebel|disrupt/.test(personality) ? "Hero/Rebel" : /premium|luxury|exclusive/.test(personality) ? "Ruler" : "Creator";
+  const issues = [];
+  if (!input.competitors) issues.push(makeIssue("competitors", "Competitor contrast is missing", "medium", "Positioning", "No competitors supplied.", "Add 3-5 competitor references and define what to avoid.", 3, 1));
+  if (wordCount(input.positioning) < 8) issues.push(makeIssue("positioning", "Positioning is too thin", "high", "Positioning", "Statement lacks detail.", "Write category, audience, benefit, and proof.", 5, 2));
+  const breakdown = [
+    { key: "positioning", label: "Positioning clarity", score: Math.min(30, wordCount(input.positioning) * 2), max: 30, detail: "Category, audience, benefit, proof." },
+    { key: "differentiation", label: "Differentiation", score: input.competitors ? 20 : 8, max: 20, detail: input.competitors ? "Competitors supplied." : "No competitor contrast." },
+    { key: "tone", label: "Tone usability", score: personality ? 20 : 6, max: 20, detail: personality || "No personality inputs." },
+    { key: "visual", label: "Visual coherence", score: input.visualPreferences ? 20 : 8, max: 20, detail: input.visualPreferences || "No visual preferences." },
+    { key: "system", label: "System readiness", score: 7, max: 10, detail: "Starter tokens generated." }
+  ];
+  return finishToolOutput(tool, input, "brand-kit", breakdown, issues, [
+    tableSection("kit", "Brand kit", ["Element", "Recommendation"], [["Archetype", archetype], ["Tone", "Clear, specific, proof-led."], ["Color", "Deep neutral, trust accent, action accent."], ["Typography", "Humanist sans for UI, confident display for hero."], ["Logo", "Simple symbol plus wordmark."]]),
+    tableSection("tokens", "Starter tokens", ["Token", "Value"], [["radius", "8px"], ["primary", "#7c3aed"], ["success", "#10b981"], ["surface", "#0f172a"], ["text", "#f8fafc"]]),
+    listSection("hero", "Sample landing hero", [`Headline: ${input.businessName || "Brand"}`, `Subhead: ${input.positioning || "Positioning statement"}`, "CTA: Start assessment"])
+  ], checklistItems(["Validate archetype.", "Choose accessible color tokens.", "Create logo brief.", "Write voice examples.", "Apply to one landing page."], "Brand"));
+}
+
+function designSystemToolOutput(tool, input) {
+  const components = String(input.components || "").split(/[,\n]+/).filter(Boolean);
+  const states = String(input.states || "").split(/[,\n]+/).filter(Boolean);
+  const colors = String(input.brandColors || "").split(/[,\n]+/).filter(Boolean);
+  const issues = [];
+  if (components.length < 6) issues.push(makeIssue("components", "Core component coverage is incomplete", "medium", "Components", `${components.length} components supplied.`, "Add forms, tables, navigation, feedback, overlays, and empty states.", 4, 2));
+  if (!states.some((s) => /focus/i.test(s))) issues.push(makeIssue("focus", "Focus state is missing", "high", "Accessibility", "No focus state supplied.", "Define visible focus rings for all interactive components.", 5, 1));
+  if (colors.length < 3) issues.push(makeIssue("colors", "Color token set is too small", "medium", "Tokens", `${colors.length} colors supplied.`, "Define background, surface, text, border, primary, success, warning, danger.", 3, 2));
+  const breakdown = [
+    { key: "tokens", label: "Token coverage", score: Math.min(25, colors.length * 5 + (input.tokens ? 5 : 0)), max: 25, detail: `${colors.length} colors.` },
+    { key: "components", label: "Component coverage", score: Math.min(25, components.length * 4), max: 25, detail: `${components.length} components.` },
+    { key: "states", label: "State coverage", score: Math.min(20, states.length * 4), max: 20, detail: `${states.length} states.` },
+    { key: "a11y", label: "Accessibility", score: /aa|aaa/i.test(input.accessibilityTarget || "") ? 20 : 10, max: 20, detail: input.accessibilityTarget || "" },
+    { key: "implementation", label: "Implementation", score: input.density ? 10 : 4, max: 10, detail: input.density || "" }
+  ];
+  return finishToolOutput(tool, input, "design-system", breakdown, issues, [
+    tableSection("tokens", "Design tokens", ["Token", "Value"], [["radius.card", "8px"], ["space.1", "4px"], ["space.2", "8px"], ["color.primary", colors[0] || "#7c3aed"], ["density", input.density || "Compact"]]),
+    tableSection("components", "Component map", ["Component", "States"], components.slice(0, 12).map((c) => [c.trim(), states.join(", ") || "default, hover, focus, disabled"])),
+    listSection("rules", "Implementation rules", ["Use 8px or smaller radius.", "Never nest cards inside cards.", "Every input needs label, helper/error, disabled, focus, and loading states.", "Contrast target must match accessibility target."])
+  ], checklistItems(["Approve token names.", "Build buttons and inputs.", "Add table/modal/toast/empty states.", "Run contrast checks.", "Document examples."], "Design"));
+}
+
+function architectureToolOutput(tool, input) {
+  const combined = `${input.architecture || ""} ${input.deployment || ""} ${input.risks || ""}`;
+  const issues = [];
+  if (!/queue|worker|job|async/i.test(combined)) issues.push(makeIssue("queue", "No async boundary detected", "medium", "Scalability", "No queue or worker mentioned.", "Add a queue/worker boundary for slow or retryable work.", 4, 3));
+  if (!/rbac|role|permission|mfa|oauth|sso/i.test(input.auth || "")) issues.push(makeIssue("auth", "Auth model lacks role detail", "high", "Security", input.auth || "No auth details.", "Document roles, permissions, MFA/SSO, and admin boundaries.", 5, 2));
+  if (!input.monitoring) issues.push(makeIssue("observability", "Observability plan is missing", "high", "Observability", "No monitoring supplied.", "Add logs, metrics, traces, alerts, and dashboards.", 5, 2));
+  const breakdown = [
+    { key: "scalability", label: "Scalability", score: /cache|queue|worker|cdn|replica/i.test(combined) ? 25 : 12, max: 25, detail: "Caching, queues, workers, CDN, replicas." },
+    { key: "security", label: "Security", score: /rbac|role|permission|mfa|oauth|sso/i.test(input.auth || "") ? 25 : 10, max: 25, detail: input.auth || "No auth detail." },
+    { key: "maintainability", label: "Maintainability", score: /service|module|api|contract/i.test(combined) ? 20 : 10, max: 20, detail: "Module and contract clarity." },
+    { key: "observability", label: "Observability", score: input.monitoring ? 15 : 3, max: 15, detail: input.monitoring || "Missing." },
+    { key: "deployment", label: "Deployment safety", score: /rollback|migration|staging|canary|flag/i.test(combined) ? 15 : 7, max: 15, detail: input.deployment || "" }
+  ];
+  return finishToolOutput(tool, input, "architecture-review", breakdown, issues, [
+    tableSection("risks", "Risk register", ["Risk", "Severity", "Mitigation"], issues.map((i) => [i.title, i.severity, i.fix])),
+    tableSection("scores", "Category scores", ["Category", "Score"], breakdown.map((i) => [i.label, `${i.score}/${i.max}`])),
+    listSection("roadmap", "Implementation roadmap", ["Document interfaces.", "Add permission matrix.", "Add observability.", "Add rollback plan.", "Load-test peak path."])
+  ], checklistItems(["Review auth and permissions.", "Add metrics/logs/traces.", "Create rollback plan.", "Load-test peak path.", "Write tickets for top risks."], "Engineering"));
+}
+
+function securityToolOutput(tool, input) {
+  const all = Object.values(input).join(" ").toLowerCase();
+  const issues = [];
+  if (!/mfa|2fa|sso|oauth/i.test(input.auth || "")) issues.push(makeIssue("mfa", "MFA/SSO is not described", "high", "Auth", "Auth lacks MFA/SSO detail.", "Require MFA for admins and SSO/OAuth for privileged access.", 5, 2));
+  if (/pii|billing|payment|health|customer/i.test(input.dataTypes || "") && !/encrypt|token|mask|redact/i.test(all)) issues.push(makeIssue("data", "Sensitive data controls are unclear", "critical", "Data protection", "Sensitive data is present without controls.", "Define encryption, retention, redaction, access logs, and minimization.", 5, 3));
+  if (!/rate|waf|captcha|limit/i.test(input.exposure || "")) issues.push(makeIssue("abuse", "Abuse protection is missing", "medium", "Exposure", "Public exposure lacks rate limits or WAF notes.", "Add rate limits, bot checks, WAF rules, and abuse monitoring.", 4, 2));
+  const breakdown = [
+    { key: "auth", label: "Auth and access", score: /mfa|2fa|sso|oauth|rbac|role/i.test(input.auth || "") ? 25 : 10, max: 25, detail: input.auth || "" },
+    { key: "data", label: "Data exposure", score: /encrypt|token|mask|redact|retention/i.test(all) ? 25 : 8, max: 25, detail: input.dataTypes || "" },
+    { key: "dependencies", label: "Dependency risk", score: input.dependencies ? 15 : 4, max: 15, detail: input.dependencies || "Missing." },
+    { key: "cloud", label: "Cloud controls", score: /secret|iam|cloudflare|aws|gcp/i.test(input.cloud || all) ? 20 : 8, max: 20, detail: input.cloud || "" },
+    { key: "compliance", label: "Compliance", score: input.compliance ? 10 : 7, max: 15, detail: input.compliance || "No target." }
+  ];
+  return finishToolOutput(tool, input, "security-audit", breakdown, issues, [
+    tableSection("register", "Security risk register", ["Risk", "Severity", "Fix"], issues.map((i) => [i.title, i.severity, i.fix])),
+    listSection("controls", "Recommended controls", ["Admin MFA/SSO", "Rate limits", "Secrets rotation", "Dependency scanning", "Audit logs", "Incident response runbook"])
+  ], checklistItems(["Require MFA.", "Inventory sensitive data.", "Add rate limits.", "Run dependency scanning.", "Document incident response."], "Security"));
+}
+
+function researchToolOutput(tool, input) {
+  const methods = String(input.methods || "").split(/[,\n]+/).map((m) => m.trim()).filter(Boolean);
+  const issues = [];
+  if (!/\b(compare|improve|reduce|increase|outperform|measure|test)\b/i.test(input.hypothesis || "")) issues.push(makeIssue("hypothesis", "Hypothesis is not clearly testable", "high", "Research question", "Hypothesis lacks measurable direction.", "Rewrite as a falsifiable claim with baseline and metric.", 5, 2));
+  if (!input.availableData) issues.push(makeIssue("data", "Available data is missing", "critical", "Data", "No data supplied.", "Identify datasets, splits, labels, and access constraints.", 5, 3));
+  if (!methods.length) issues.push(makeIssue("methods", "Candidate methods are missing", "medium", "Methods", "No methods supplied.", "List baseline, proposed method, ablation, and fallback.", 3, 2));
+  const matrix = (methods.length ? methods : ["Baseline prompting", "RAG", "LoRA fine-tuning", "Ablation study"]).map((method, index) => ({ option: method, score: Math.max(30, 90 - index * 10), rationale: "Ranked by feasibility against constraints and data readiness.", recommendation: index === 0 ? "Run first as baseline." : "Run after baseline if resources remain." }));
+  const breakdown = [
+    { key: "question", label: "Question clarity", score: (input.hypothesis || "").length > 40 ? 25 : 12, max: 25, detail: input.hypothesis || "" },
+    { key: "data", label: "Data readiness", score: input.availableData ? 20 : 0, max: 20, detail: input.availableData || "Missing." },
+    { key: "feasibility", label: "Feasibility", score: input.constraints ? 20 : 10, max: 25, detail: input.constraints || "" },
+    { key: "evaluation", label: "Evaluation quality", score: 12, max: 20, detail: "Baseline metrics generated." },
+    { key: "reproducibility", label: "Reproducibility", score: 6, max: 10, detail: "Checklist generated." }
+  ];
+  return finishToolOutput(tool, input, "research-plan", breakdown, issues, [
+    listSection("queries", "Literature search queries", [`"${input.topic}" benchmark`, `"${input.topic}" evaluation metrics`, `"${String(input.hypothesis || "").slice(0, 70)}"`]),
+    tableSection("metrics", "Evaluation metrics", ["Metric", "Purpose"], [["Primary task metric", "Measures target outcome."], ["Baseline delta", "Compares against simplest method."], ["Cost/latency", "Captures practical tradeoff."], ["Failure cases", "Qualitative error analysis."]]),
+    listSection("outline", "Paper outline", ["Abstract", "Introduction", "Related work", "Method", "Experiments", "Results", "Limitations", "Reproducibility appendix"])
+  ], checklistItems(["Lock research question.", "Run baseline first.", "Version datasets/configs.", "Track seeds and negative results.", "Write against paper outline."], "Research"), undefined, matrix);
+}
+
+function boardMemoToolOutput(tool, input) {
+  const runway = numeric(input, "runway");
+  const team = numeric(input, "teamSize");
+  const issues = [];
+  if (runway && runway < 6) issues.push(makeIssue("runway", "Runway is critical", "critical", "Financial risk", `${runway} months runway.`, "Freeze nonessential spend and approve a 30-day runway extension plan.", 5, 2));
+  else if (runway < 12) issues.push(makeIssue("runway-watch", "Runway requires board attention", "high", "Financial risk", `${runway} months runway.`, "Create a 60-day plan to improve burn multiple or revenue quality.", 4, 2));
+  if (team > 0 && runway < 12) issues.push(makeIssue("team", "Team size and runway create execution pressure", "medium", "People", `${team} people and ${runway} months runway.`, "Assign owners to revenue, cost, product, and retention workstreams.", 4, 2));
+  const matrix = [
+    { option: "Do nothing", score: runway < 12 ? 20 : 45, rationale: "Preserves focus but does not reduce current risk.", recommendation: "Reject unless problem is trending down." },
+    { option: "Focused 30-day intervention", score: 85, rationale: "Creates evidence while limiting disruption.", recommendation: "Recommended default." },
+    { option: "Large strategic pivot", score: runway < 6 ? 35 : 60, rationale: "May be necessary but carries execution risk.", recommendation: "Use only if current strategy is clearly failing." }
+  ];
+  const breakdown = [
+    { key: "urgency", label: "Urgency", score: runway < 6 ? 30 : runway < 12 ? 22 : 12, max: 30, detail: `${runway} months runway.` },
+    { key: "execution", label: "Execution clarity", score: (input.goal || "").length > 25 ? 18 : 8, max: 20, detail: input.goal || "" },
+    { key: "financial", label: "Financial risk", score: input.revenue ? 15 : 6, max: 20, detail: input.revenue || "" },
+    { key: "decision", label: "Decision quality", score: (input.currentProblem || "").length > 30 ? 16 : 8, max: 20, detail: input.currentProblem || "" },
+    { key: "communication", label: "Board readiness", score: 8, max: 10, detail: "Memo structure generated." }
+  ];
+  return finishToolOutput(tool, input, "executive-memo", breakdown, issues, [
+    tableSection("memo", "Executive memo", ["Section", "Content"], [["Decision needed", input.goal || ""], ["Current state", input.currentProblem || ""], ["Recommendation", "Approve a focused 30-day intervention with named owners and weekly board updates."], ["Board ask", "Approve owner map, metric targets, and constraints."]]),
+    tableSection("owners", "Owner map", ["Workstream", "Owner role"], [["Revenue", "CEO / Growth lead"], ["Product", "CPO / Product lead"], ["Finance", "CFO / Ops"], ["People", "COO / People lead"]])
+  ], checklistItems(["Approve recommended option.", "Assign owner roles.", "Set weekly metrics.", "Prepare board update template.", "Review at 30/60/90 days."], "CEO"), [
+    { period: "30 days", title: "Stabilize", actions: ["Freeze low-return work.", "Pick one revenue or risk metric.", "Start weekly review."] },
+    { period: "60 days", title: "Improve", actions: ["Scale working intervention.", "Pause failing workstreams.", "Update board on evidence."] },
+    { period: "90 days", title: "Decide", actions: ["Choose continue, pivot, or fundraising/cost action.", "Document next operating plan."] }
+  ], matrix);
+}
+
+function genericToolOutput(tool, input) {
+  const fields = tool.inputSchema?.fields || [];
+  const filled = fields.filter((field) => input[field.name]).length;
+  const detailed = fields.filter((field) => wordCount(input[field.name]) >= 8).length;
+  const issues = fields.filter((field) => field.required && !input[field.name]).map((field) => makeIssue(`missing-${field.name}`, `${field.label} is missing`, "high", "Input validation", "Required input is empty.", `Fill ${field.label.toLowerCase()} before using the result.`, 5, 1));
+  if (detailed < 2) issues.push(makeIssue("specificity", "Inputs are too thin for a strong workflow result", "medium", "Specificity", `${detailed} fields contain detailed context.`, "Add concrete data, constraints, examples, or current state notes.", 4, 1));
+  const breakdown = [
+    { key: "completeness", label: "Input completeness", score: Math.round((filled / Math.max(1, fields.length)) * 30), max: 30, detail: `${filled}/${fields.length} fields completed.` },
+    { key: "specificity", label: "Specificity", score: Math.min(25, detailed * 8), max: 25, detail: `${detailed} detailed fields.` },
+    { key: "evidence", label: "Evidence quality", score: input.data || input.context ? 20 : 8, max: 20, detail: "Checks context/data fields." },
+    { key: "workflow", label: "Workflow coverage", score: tool.workflowSteps?.length ? 15 : 7, max: 15, detail: `${tool.workflowSteps?.length || 0} workflow steps.` },
+    { key: "actionability", label: "Actionability", score: input.goal ? 10 : 5, max: 10, detail: input.goal || "No goal supplied." }
+  ];
+  return finishToolOutput(tool, input, "workflow", breakdown, issues, [
+    tableSection("validation", "Input validation", ["Field", "Status"], fields.map((field) => [field.label, input[field.name] ? "supplied" : field.required ? "missing" : "optional"])),
+    listSection("workflow", "Workflow steps", tool.workflowSteps || []),
+    listSection("actions", "Action plan", ["Validate assumptions with the owner.", "Run the first priority action.", "Export the result.", "Re-run when new data is available."])
+  ], checklistItems(["Review missing context.", "Assign owner.", "Execute first recommendation.", "Export result.", "Schedule follow-up."], "Owner"));
 }
 
 function collectForm(form, tool) {
@@ -860,7 +1340,7 @@ function handleToolSubmit(form) {
   };
   saveRuns([run, ...runs()]);
   renderToolPage(tool);
-  showToast("Output generated and saved to history.");
+  showToast("Tool result saved to history.");
 }
 
 async function copyText(text) {
@@ -868,17 +1348,26 @@ async function copyText(text) {
   showToast("Copied to clipboard.");
 }
 
-function exportMarkdown(output) {
-  const blob = new Blob([output.markdown], { type: "text/markdown;charset=utf-8" });
+function exportResult(output, format = "markdown") {
+  const safeFormat = ["markdown", "json", "csv", "html"].includes(format) ? format : "markdown";
+  const content = output.exports?.[safeFormat] || output.exports?.markdown || output.markdown || "";
+  const extension = { markdown: "md", json: "json", csv: "csv", html: "html" }[safeFormat];
+  const mime = {
+    markdown: "text/markdown;charset=utf-8",
+    json: "application/json;charset=utf-8",
+    csv: "text/csv;charset=utf-8",
+    html: "text/html;charset=utf-8"
+  }[safeFormat];
+  const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `${output.summary.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "upmyskills-output"}.md`;
+  link.download = `${output.summary.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "upmyskills-output"}.${extension}`;
   document.body.appendChild(link);
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
-  showToast("Markdown exported.");
+  showToast(`${safeFormat.toUpperCase()} exported.`);
 }
 
 function historyCard(run) {
@@ -886,7 +1375,7 @@ function historyCard(run) {
     <a class="card pad history-card" href="#/tool/${encodeURIComponent(run.toolSlug)}" data-run-id="${escapeHtml(run.id)}">
       <p class="section-kicker">${escapeHtml(run.domain)}</p>
       <h3>${escapeHtml(run.title)}</h3>
-      <p class="muted small">${escapeHtml(run.output?.summary || "Generated output")}</p>
+      <p class="muted small">${escapeHtml(run.output?.summary || "Tool result")}</p>
       <span class="pill">${escapeHtml(formatDate(run.createdAt))}</span>
     </a>
   `;
@@ -897,13 +1386,13 @@ function renderHistory() {
   app.innerHTML = `
     <section>
       <p class="section-kicker">History</p>
-      <h1>Saved generations</h1>
+      <h1>Saved tool runs</h1>
       <p class="muted">History is stored in this browser with localStorage. No account or paid API key is required for this deployed runner.</p>
       <div class="actions">
         <button data-action="clear-history" ${items.length ? "" : "disabled"}>Clear history</button>
         <a class="button primary" href="#/tools">Run another tool</a>
       </div>
-      <div class="grid cards-3 section">${items.map(historyCard).join("") || emptyState("No saved generations yet.")}</div>
+      <div class="grid cards-3 section">${items.map(historyCard).join("") || emptyState("No saved tool runs yet.")}</div>
     </section>
   `;
 }
@@ -946,7 +1435,7 @@ function renderSettings() {
       <div class="grid cards-3 section">
         <div class="card pad"><h3>Current provider</h3><p class="muted">Local browser runner</p></div>
         <div class="card pad"><h3>History storage</h3><p class="muted">Browser localStorage</p></div>
-        <div class="card pad"><h3>Generated tools</h3><p class="muted">${state.totalTools.toLocaleString()} executable workflows</p></div>
+        <div class="card pad"><h3>Available tools</h3><p class="muted">${state.totalTools.toLocaleString()} executable workflows</p></div>
       </div>
     </section>
   `;
@@ -1034,11 +1523,12 @@ document.addEventListener("click", async (event) => {
   }
 
   if (action === "copy" && state.output) {
-    await copyText(state.output.markdown);
+    await copyText(state.output.exports?.markdown || state.output.markdown || "");
   }
 
   if (action === "export" && state.output) {
-    exportMarkdown(state.output);
+    const format = event.target.closest("[data-action]")?.dataset.format || "markdown";
+    exportResult(state.output, format);
   }
 
   if (action === "load-more") {

@@ -19,7 +19,7 @@ export default async function SourcesPage() {
         <p className="text-sm font-black uppercase text-up-rust">Attribution</p>
         <h1 className="text-4xl font-black tracking-tight">Source repositories</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-          UpMySkills converts source skills into executable wrappers while keeping repo attribution and license notes visible.
+          UpMySkills turns source skills into executable workflow tools while keeping repo attribution and license notes visible.
         </p>
       </div>
 
@@ -36,7 +36,7 @@ export default async function SourcesPage() {
               <p className="text-sm leading-6 text-muted-foreground">{source.notes}</p>
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4">
                 <span className="text-sm font-semibold text-muted-foreground">
-                  {countByRepo.get(source.url.replace("https://github.com/", "")) ?? 0} tools generated
+                  {countByRepo.get(source.url.replace("https://github.com/", "")) ?? 0} tools available
                 </span>
                 <Link href={source.url} target="_blank" className="inline-flex items-center gap-2 text-sm font-semibold text-primary">
                   Open source

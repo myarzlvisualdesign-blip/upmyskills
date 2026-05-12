@@ -92,7 +92,7 @@ export default async function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm leading-6 text-muted-foreground">No generations yet. Run a tool to create history.</p>
+              <p className="text-sm leading-6 text-muted-foreground">No saved tool runs yet. Run a tool to create history.</p>
             )}
           </CardContent>
         </Card>

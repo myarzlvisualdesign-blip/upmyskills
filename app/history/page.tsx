@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 function summaryOf(output: unknown) {
   if (output && typeof output === "object" && "summary" in output) return String((output as { summary: unknown }).summary);
-  return "Saved generation output";
+  return "Saved tool result";
 }
 
 export default async function HistoryPage() {
@@ -31,9 +31,9 @@ export default async function HistoryPage() {
     <div className="space-y-5">
       <div>
         <p className="text-sm font-black uppercase text-up-rust">History</p>
-        <h1 className="text-4xl font-black tracking-tight">Saved generations</h1>
+        <h1 className="text-4xl font-black tracking-tight">Saved tool runs</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-          Each tool run is stored locally through Prisma so users can revisit outputs and rerun the source tool.
+          Each tool run is stored locally through Prisma so users can revisit structured results and rerun the source tool.
         </p>
       </div>
 
@@ -70,7 +70,7 @@ export default async function HistoryPage() {
         <Card>
           <CardContent className="p-10 text-center">
             <h2 className="text-xl font-black">No history yet</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Run any tool and the generated output will appear here.</p>
+            <p className="mt-2 text-sm text-muted-foreground">Run any tool and the structured result will appear here.</p>
           </CardContent>
         </Card>
       )}

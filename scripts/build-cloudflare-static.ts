@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { priorityToolDefinitions } from "../lib/tools/schemas";
 import type { GeneratedSeed, NormalizedTool } from "../lib/tools/types";
 
 const root = process.cwd();
@@ -51,7 +52,18 @@ function compactTool(tool: NormalizedTool) {
     sourcePath: tool.sourcePath,
     license: tool.license,
     inputSchema: tool.inputSchema,
+    outputSchema: tool.outputSchema,
     workflowSteps: tool.workflowSteps,
+    deterministicChecks: tool.deterministicChecks ?? ["input-completeness", "specificity", "evidence-quality", "actionability"],
+    scoringRules: tool.scoringRules ?? [
+      { key: "completeness", label: "Input completeness", weight: 30, description: "Required inputs are present." },
+      { key: "specificity", label: "Specificity", weight: 25, description: "Inputs contain concrete details." },
+      { key: "evidence", label: "Evidence quality", weight: 20, description: "Useful context and data are supplied." },
+      { key: "workflow", label: "Workflow coverage", weight: 15, description: "Workflow can be converted into steps." },
+      { key: "actionability", label: "Actionability", weight: 10, description: "Output can drive next actions." }
+    ],
+    exportFormats: tool.exportFormats ?? ["markdown", "json", "html"],
+    rendererType: tool.rendererType ?? "workflow",
     sampleInput: tool.sampleInput,
     tags: tool.tags
   };
@@ -159,8 +171,35 @@ function isUsableStaticTool(tool: NormalizedTool) {
   );
 }
 
+function priorityAsTool(definition: (typeof priorityToolDefinitions)[number], existing?: ReturnType<typeof compactTool>) {
+  return {
+    id: existing?.id ?? definition.id,
+    title: definition.title,
+    slug: definition.slug,
+    domain: definition.domain,
+    description: definition.description,
+    sourceRepo: existing?.sourceRepo ?? definition.sourceRepo ?? "UpMySkills workflow engine",
+    sourcePath: existing?.sourcePath ?? definition.sourcePath,
+    license: existing?.license ?? definition.license ?? "Internal workflow",
+    inputSchema: definition.inputSchema,
+    outputSchema: definition.outputSchema,
+    workflowSteps: definition.workflowSteps,
+    deterministicChecks: definition.deterministicChecks,
+    scoringRules: definition.scoringRules,
+    exportFormats: definition.exportFormats,
+    rendererType: definition.rendererType,
+    sampleInput: definition.sampleInput ?? existing?.sampleInput ?? {},
+    tags: definition.tags ?? existing?.tags ?? []
+  };
+}
+
 const seed = JSON.parse(fs.readFileSync(inputPath, "utf8")) as GeneratedSeed;
-const tools = seed.tools.filter(isUsableStaticTool).map(compactTool);
+const sourceTools = seed.tools.filter(isUsableStaticTool).map(compactTool);
+const toolsBySlug = new Map(sourceTools.map((tool) => [tool.slug, tool]));
+for (const definition of priorityToolDefinitions) {
+  toolsBySlug.set(definition.slug, priorityAsTool(definition, toolsBySlug.get(definition.slug)));
+}
+const tools = Array.from(toolsBySlug.values());
 const domainGroups = new Map<string, ReturnType<typeof compactTool>[]>();
 const sourceCounts: Record<string, number> = {};
 

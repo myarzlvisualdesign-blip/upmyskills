@@ -20,7 +20,7 @@ export default async function HomePage() {
         titleTop={`${stats.tools.toLocaleString("id-ID")} AI Skills, Ready to Run.`}
         titleBottom="Built for Real Workflows."
         descriptionTop="UpMySkills converts Claude and AI skill repositories into usable web tools."
-        descriptionBottom="Forms, generated outputs, local history, Markdown export, search, filters, and source attribution."
+        descriptionBottom="Structured inputs, validation, scoring, audits, recommendations, local history, exports, and source attribution."
       />
 
       <section className="grid gap-4 md:grid-cols-3">
@@ -28,21 +28,21 @@ export default async function HomePage() {
           <CardContent className="p-5">
             <Sparkles className="mb-4 size-6 text-up-violet" />
             <h2 className="text-lg font-black">Real web tools</h2>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">Every visible tool has a form, sample inputs, generation output, copy, export, and history.</p>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">Every priority tool has structured inputs, deterministic checks, scored results, copy, export, and history.</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-5">
             <Workflow className="mb-4 size-6 text-up-green" />
-            <h2 className="text-lg font-black">Normalized workflows</h2>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">Markdown skills are converted into input schemas, prompt templates, output schemas, and steps.</p>
+            <h2 className="text-lg font-black">Workflow engine</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">Tools validate inputs, run local analysis, score issues, and render custom sections before any AI enhancement.</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-5">
             <Database className="mb-4 size-6 text-up-rust" />
             <h2 className="text-lg font-black">Saved runs</h2>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">Generated outputs are stored with Prisma and SQLite for local development.</p>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">Structured tool results are stored with Prisma and SQLite for local development.</p>
           </CardContent>
         </Card>
       </section>

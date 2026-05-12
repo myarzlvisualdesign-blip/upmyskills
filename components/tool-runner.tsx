@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { OutputPanel } from "@/components/output-panel";
-import type { GeneratedOutput } from "@/lib/llm/types";
+import type { ToolRunOutput } from "@/lib/tools/types";
 import type { ToolInputSchema } from "@/lib/tools/types";
 
 type ToolRunnerProps = {
@@ -45,7 +45,7 @@ export function ToolRunner({ tool }: ToolRunnerProps) {
   const [values, setValues] = useState<Record<string, string>>(() => {
     return Object.fromEntries(schema.fields.map((field) => [field.name, ""]));
   });
-  const [output, setOutput] = useState<GeneratedOutput | null>(null);
+  const [output, setOutput] = useState<ToolRunOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -60,7 +60,7 @@ export function ToolRunner({ tool }: ToolRunnerProps) {
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ toolId: tool.id, input: nextValues, provider: "local" })
+        body: JSON.stringify({ toolId: tool.id, input: nextValues })
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Tool execution failed");
@@ -153,7 +153,7 @@ export function ToolRunner({ tool }: ToolRunnerProps) {
             <div className="flex flex-col gap-2 pt-2 sm:flex-row">
               <Button type="submit" className="flex-1" disabled={loading}>
                 <Wand2 className="size-4" />
-                {output ? "Regenerate" : "Run tool"}
+                {output ? "Run again" : "Run tool"}
               </Button>
               <Button type="button" variant="outline" onClick={loadSample}>
                 Load sample
