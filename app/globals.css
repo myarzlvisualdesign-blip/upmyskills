@@ -37,10 +37,7 @@ html {
 
 body {
   min-width: 320px;
-  background:
-    radial-gradient(circle at top left, rgba(147, 51, 234, 0.18), transparent 30rem),
-    radial-gradient(circle at bottom right, rgba(88, 28, 135, 0.22), transparent 26rem),
-    hsl(var(--background));
+  background: linear-gradient(180deg, #050211 0%, hsl(var(--background)) 360px);
   color: hsl(var(--foreground));
   font-feature-settings: "rlig" 1, "calt" 1;
 }

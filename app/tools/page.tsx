@@ -13,12 +13,15 @@ export const dynamic = "force-dynamic";
 type ToolsSearchParams = {
   q?: string;
   domain?: string;
+  page?: string;
 };
 
 export default async function ToolsPage({ searchParams }: { searchParams: Promise<ToolsSearchParams> }) {
   const params = await searchParams;
   const q = params.q?.trim() ?? "";
   const domain = params.domain ?? "All";
+  const pageSize = 48;
+  const page = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
   const where = {
     AND: [
       domain !== "All" ? { domain } : {},
@@ -48,10 +51,20 @@ export default async function ToolsPage({ searchParams }: { searchParams: Promis
         tags: true
       },
       orderBy: [{ domain: "asc" }, { title: "asc" }],
-      take: 240
+      skip: (page - 1) * pageSize,
+      take: pageSize
     }),
     prisma.tool.count({ where })
   ]);
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const baseParams = new URLSearchParams();
+  if (q) baseParams.set("q", q);
+  if (domain !== "All") baseParams.set("domain", domain);
+  const pageHref = (nextPage: number) => {
+    const next = new URLSearchParams(baseParams);
+    next.set("page", String(nextPage));
+    return `/tools?${next.toString()}`;
+  };
 
   return (
     <div className="space-y-5">
@@ -86,9 +99,21 @@ export default async function ToolsPage({ searchParams }: { searchParams: Promis
         <p className="text-sm font-semibold text-muted-foreground">
           Showing {tools.length.toLocaleString("id-ID")} of {total.toLocaleString("id-ID")} executable tools
         </p>
-        {total > tools.length ? (
-          <p className="text-xs text-muted-foreground">Refine the search to narrow the result set.</p>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {page > 1 ? (
+            <Link href={pageHref(page - 1)} className={buttonVariants({ variant: "outline", size: "sm" })}>
+              Previous
+            </Link>
+          ) : null}
+          <span className="text-xs text-muted-foreground">
+            Page {page.toLocaleString("id-ID")} of {totalPages.toLocaleString("id-ID")}
+          </span>
+          {page < totalPages ? (
+            <Link href={pageHref(page + 1)} className={buttonVariants({ variant: "outline", size: "sm" })}>
+              Next
+            </Link>
+          ) : null}
+        </div>
       </div>
 
       {tools.length ? (

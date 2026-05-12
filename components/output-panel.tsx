@@ -103,6 +103,12 @@ export function OutputPanel({ output, loading, error }: OutputPanelProps) {
           </ul>
         </section>
         <section>
+          <h3 className="mb-2 text-sm font-black uppercase text-muted-foreground">Concrete deliverable</h3>
+          <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-md bg-up-ink p-4 text-xs leading-6 text-up-cream">
+            {output.deliverable}
+          </pre>
+        </section>
+        <section>
           <h3 className="mb-2 text-sm font-black uppercase text-muted-foreground">Markdown deliverable</h3>
           <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap rounded-md bg-up-ink p-4 text-xs leading-6 text-up-cream">
             {output.markdown}

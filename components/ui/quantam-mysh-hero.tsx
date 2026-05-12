@@ -1,5 +1,3 @@
-import React from "react";
-
 type HeroSectionProps = {
   brand?: string;
   eyebrowYear?: string;
@@ -29,15 +27,11 @@ const HeroSection = ({
   secondaryHref = "/tools",
   marqueeItems = ["SEO & GEO", "MARKETING", "DESIGN", "AGENTS", "RESEARCH", "ADVISORY"]
 }: HeroSectionProps) => {
-  const loopItems = [...marqueeItems, ...marqueeItems];
-
   return (
-    <div className="relative min-h-screen w-full max-w-screen overflow-x-hidden bg-black text-white font-sans">
+    <div className="relative w-full max-w-screen overflow-x-hidden rounded-lg border border-white/10 bg-[linear-gradient(145deg,#000_0%,#10051f_58%,#30105b_100%)] text-white font-sans shadow-[0_22px_70px_rgba(0,0,0,0.34)]">
       <nav className="relative z-10 flex items-center justify-between px-5 py-6 sm:px-10">
         <a href="/" className="flex items-center">
-          <span className="mr-1 text-2xl text-purple-600">•</span>
           <span className="text-xl font-semibold">{brand}</span>
-          <span className="ml-1 text-2xl text-purple-600">•</span>
         </a>
         <ul className="hidden rounded-full bg-purple-500/10 px-3 py-1 text-sm sm:flex sm:space-x-2">
           {["Home", "Dashboard", "Tools", "Sources", "History"].map((item) => (
@@ -56,7 +50,7 @@ const HeroSection = ({
         </a>
       </nav>
 
-      <div className="relative z-10 flex flex-col items-center px-5 pt-20 text-center sm:px-10">
+      <div className="relative z-10 flex min-h-[620px] flex-col items-center justify-center px-5 py-16 text-center sm:px-10">
         <div className="mb-8 flex items-center rounded-full border border-purple-600/50 bg-purple-900/20 py-1 pl-2 pr-4 text-xs font-light tracking-wider text-purple-300">
           <span className="mr-2 rounded-full bg-purple-600 px-3 py-1 text-xs font-light text-white">{eyebrowYear}</span>
           {eyebrow}
@@ -74,21 +68,16 @@ const HeroSection = ({
           </a>
         </div>
 
-        <div className="relative z-10 mx-auto mb-20 h-10 w-full max-w-xl overflow-hidden">
-          <div className="flex animate-marquee whitespace-nowrap text-xl text-gray-400">
-            {loopItems.map((item, index) => (
-              <React.Fragment key={`${item}-${index}`}>
-                <span className="mx-6">{item}</span>
-                <span className="mx-6">∞</span>
-              </React.Fragment>
+        <div className="relative z-10 mx-auto mb-8 w-full max-w-2xl">
+          <div className="flex flex-wrap justify-center gap-3 text-sm font-medium text-gray-300">
+            {marqueeItems.map((item) => (
+              <span key={item} className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-2">
+                {item}
+              </span>
             ))}
           </div>
-          <div className="pointer-events-none absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-black to-transparent" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-black to-transparent" />
         </div>
       </div>
-
-      <div className="absolute bottom-0 left-0 right-0 h-[400px] rounded-t-full bg-gradient-to-t from-purple-900/50 via-purple-600/20 to-transparent opacity-80 blur-3xl" />
     </div>
   );
 };

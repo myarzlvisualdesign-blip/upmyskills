@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <div className="mx-auto flex min-h-screen w-full max-w-[1680px] flex-col px-4 py-4 md:px-6">
-          <header className="sticky top-3 z-40 mb-4 rounded-lg border border-purple-600/20 bg-black/70 px-3 py-3 shadow-[0_18px_70px_rgba(88,28,135,0.28)] backdrop-blur-xl">
+          <header className="sticky top-3 z-40 mb-4 rounded-lg border border-purple-600/20 bg-black/95 px-3 py-3 shadow-[0_12px_35px_rgba(0,0,0,0.24)]">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <Link href="/" className="flex items-center gap-3 no-underline">
                 <span className="text-2xl text-purple-600">•</span>

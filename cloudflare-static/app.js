@@ -34,20 +34,24 @@ const domainMeta = {
   }
 };
 
+const PAGE_SIZE = 48;
+const catalogPromises = {};
+
 const state = {
   tools: [],
   totalTools: 0,
   sources: [],
   sourceCounts: {},
   domainCounts: [],
-  domainCache: {},
+  loadedDomains: {},
+  allCatalogLoaded: false,
+  toolDetails: {},
   featuredTools: [],
-  toolIndex: {},
-  allToolsLoaded: false,
   skippedCount: 0,
   generatedAt: "",
   query: "",
   domain: "All",
+  visibleCount: PAGE_SIZE,
   output: null,
   formValues: {}
 };
@@ -85,8 +89,8 @@ function domainFromSlug(slug) {
 }
 
 function toolBySlug(slug) {
-  return state.tools.find((tool) => tool.slug === slug || tool.id === slug) ||
-    Object.values(state.domainCache).flat().find((tool) => tool.slug === slug || tool.id === slug);
+  return Object.values(state.toolDetails).find((tool) => tool.slug === slug || tool.id === slug) ||
+    state.tools.find((tool) => tool.slug === slug || tool.id === slug);
 }
 
 function loadingState(message = "Loading...") {
@@ -113,19 +117,57 @@ function mergeTools(tools) {
 }
 
 async function ensureDomainTools(domain) {
-  if (state.domainCache[domain]) return state.domainCache[domain];
-  const payload = await fetchJson(`data/tools-${domainSlug(domain)}.json`);
-  const tools = (payload.tools || []).sort((a, b) => a.title.localeCompare(b.title));
-  state.domainCache[domain] = tools;
-  mergeTools(tools);
-  return tools;
+  await ensureDomainCatalog(domain);
+  return state.tools.filter((tool) => tool.domain === domain);
 }
 
 async function ensureAllTools() {
-  if (state.allToolsLoaded) return state.tools;
-  await Promise.all(Object.keys(domainMeta).map((domain) => ensureDomainTools(domain)));
-  state.allToolsLoaded = true;
+  return ensureAllCatalogs();
+}
+
+async function ensureDomainCatalog(domain) {
+  if (state.loadedDomains[domain]) {
+    return state.tools.filter((tool) => tool.domain === domain);
+  }
+
+  if (catalogPromises[domain]) {
+    await catalogPromises[domain];
+    return state.tools.filter((tool) => tool.domain === domain);
+  }
+
+  catalogPromises[domain] = fetchJson(`data/catalogs/${domainSlug(domain)}.json`)
+    .then((payload) => {
+      mergeTools(payload.tools || []);
+      state.loadedDomains[domain] = true;
+    })
+    .finally(() => {
+      delete catalogPromises[domain];
+    });
+
+  await catalogPromises[domain];
+  return state.tools.filter((tool) => tool.domain === domain);
+}
+
+async function ensureAllCatalogs() {
+  if (state.allCatalogLoaded) return state.tools;
+  await Promise.all(Object.keys(domainMeta).map((domain) => ensureDomainCatalog(domain)));
+  state.allCatalogLoaded = true;
   return state.tools;
+}
+
+async function ensureToolDetail(slugOrId) {
+  const cached = toolBySlug(slugOrId);
+  if (cached?.inputSchema) return cached;
+
+  const catalogSummary = toolBySlug(slugOrId);
+  const slug = catalogSummary?.slug || slugOrId;
+
+  if (state.toolDetails[slug]) return state.toolDetails[slug];
+
+  const tool = await fetchJson(`data/tools/${slug}.json`);
+  state.toolDetails[tool.slug] = tool;
+  mergeTools([tool]);
+  return tool;
 }
 
 function runs() {
@@ -159,7 +201,7 @@ function formatDate(value) {
 }
 
 function domainCount(domain) {
-  return state.domainCounts.find((item) => item.domain === domain)?.count || state.domainCache[domain]?.length || 0;
+  return state.domainCounts.find((item) => item.domain === domain)?.count || 0;
 }
 
 function recentRuns(limit = 5) {
@@ -168,7 +210,7 @@ function recentRuns(limit = 5) {
 
 function matchingTools() {
   const query = state.query.trim().toLowerCase();
-  const baseTools = state.domain === "All" ? state.tools : state.domainCache[state.domain] || [];
+  const baseTools = state.domain === "All" ? state.tools : state.tools.filter((tool) => tool.domain === state.domain);
   return baseTools.filter((tool) => {
     const domainOk = state.domain === "All" || tool.domain === state.domain;
     if (!domainOk) return false;
@@ -299,42 +341,85 @@ function toolsToolbar(domainLock = "") {
   `;
 }
 
+function toolResultsHtml(matched) {
+  const visible = matched.slice(0, state.visibleCount);
+  const remaining = Math.max(0, matched.length - visible.length);
+  return `
+    <div id="toolGrid" class="grid cards-3">${visible.map(toolCard).join("") || emptyState("No tools match this filter.")}</div>
+    ${remaining ? `<div class="load-row"><button type="button" data-action="load-more">Load ${Math.min(PAGE_SIZE, remaining).toLocaleString()} more</button></div>` : ""}
+  `;
+}
+
+function isGlobalOverview() {
+  return state.domain === "All" && !state.query.trim() && !state.allCatalogLoaded;
+}
+
+function toolsOverviewHtml() {
+  const featured = state.featuredTools.slice(0, 9).map(toolCard).join("");
+  return `
+    <div class="card pad lazy-note">
+      <p class="section-kicker">Lightweight mode</p>
+      <h2>No full catalog loaded yet.</h2>
+      <p class="muted">Choose one domain to load only that catalog, or type at least 2 characters to search across all domains. This keeps the first tools screen light.</p>
+      <div class="grid cards-3 section">${domainCards()}</div>
+    </div>
+    <div class="section">
+      <p class="section-kicker">Featured tools</p>
+      <div class="grid cards-3">${featured || emptyState("Featured tools will appear after data generation.")}</div>
+    </div>
+  `;
+}
+
 function renderTools(domainLock = "") {
   if (domainLock) state.domain = domainLock;
-  const matched = matchingTools();
-  const visible = matched.slice(0, 180);
+  const overview = !domainLock && isGlobalOverview();
+  const matched = overview ? [] : matchingTools();
   app.innerHTML = `
     <section>
       <p class="section-kicker">Tool library</p>
       <h1>${domainLock ? escapeHtml(domainLock) : "Executable tools"}</h1>
-      <p class="muted">${matched.length.toLocaleString()} matching tools. Showing ${visible.length.toLocaleString()} at a time for fast browsing.</p>
+      <p class="muted">${overview ? "Pick a domain or search intentionally. The full multi-thousand-tool catalog is not loaded on first paint." : `${matched.length.toLocaleString()} matching tools. Results are paginated so the page stays light.`}</p>
       ${toolsToolbar(domainLock)}
-      <div id="toolCount" class="small muted">${matched.length.toLocaleString()} tools match your filter.</div>
-      <div id="toolGrid" class="grid cards-3 section">${visible.map(toolCard).join("") || emptyState("No tools match this filter.")}</div>
+      <div id="toolCount" class="small muted">${overview ? `${state.totalTools.toLocaleString()} tools available across ${state.domainCounts.length} domains.` : `${matched.length.toLocaleString()} tools match your filter.`}</div>
+      <div id="toolResults" class="section">${overview ? toolsOverviewHtml() : toolResultsHtml(matched)}</div>
     </section>
   `;
 }
 
 async function renderToolsRoute(domainLock = "") {
-  app.innerHTML = loadingState(domainLock ? `Loading ${domainLock} tools...` : "Loading tool library...");
+  state.visibleCount = PAGE_SIZE;
   if (domainLock) {
+    app.innerHTML = loadingState(`Loading ${domainLock} catalog...`);
     state.domain = domainLock;
-    await ensureDomainTools(domainLock);
-  } else if (state.domain === "All") {
-    await ensureAllTools();
+    await ensureDomainCatalog(domainLock);
   } else {
-    await ensureDomainTools(state.domain);
+    state.domain = "All";
+    state.query = "";
   }
   renderTools(domainLock);
 }
 
 function refreshToolGrid() {
+  if (isGlobalOverview()) {
+    const count = document.getElementById("toolCount");
+    const results = document.getElementById("toolResults");
+    if (count) count.textContent = `${state.totalTools.toLocaleString()} tools available across ${state.domainCounts.length} domains.`;
+    if (results) results.innerHTML = toolsOverviewHtml();
+    return;
+  }
+
   const matched = matchingTools();
-  const visible = matched.slice(0, 180);
   const count = document.getElementById("toolCount");
-  const grid = document.getElementById("toolGrid");
+  const results = document.getElementById("toolResults");
   if (count) count.textContent = `${matched.length.toLocaleString()} tools match your filter.`;
-  if (grid) grid.innerHTML = visible.map(toolCard).join("") || emptyState("No tools match this filter.");
+  if (results) results.innerHTML = toolResultsHtml(matched);
+}
+
+function showToolResultsLoading(message) {
+  const results = document.getElementById("toolResults");
+  const count = document.getElementById("toolCount");
+  if (count) count.textContent = message;
+  if (results) results.innerHTML = loadingState(message);
 }
 
 function inputHtml(tool, field) {
@@ -399,15 +484,12 @@ function renderToolPage(tool) {
 
 async function renderToolRoute(slug) {
   app.innerHTML = loadingState("Loading tool...");
-  let tool = toolBySlug(slug);
-  if (!tool) {
-    const indexedDomain = state.toolIndex[slug];
-    if (indexedDomain) {
-      await ensureDomainTools(indexedDomain);
-      tool = toolBySlug(slug);
-    }
+  try {
+    const tool = await ensureToolDetail(slug);
+    return tool ? renderToolPage(tool) : (app.innerHTML = emptyState("Tool not found."));
+  } catch (error) {
+    app.innerHTML = emptyState(error.message || "Tool not found.");
   }
-  return tool ? renderToolPage(tool) : (app.innerHTML = emptyState("Tool not found."));
 }
 
 function outputHtml(output) {
@@ -424,6 +506,12 @@ function outputHtml(output) {
       <h3>Checklist</h3>
       <ul>${output.checklist.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
     </div>
+    ${output.deliverable ? `
+      <div class="output-section">
+        <h3>Concrete deliverable</h3>
+        <pre>${escapeHtml(output.deliverable)}</pre>
+      </div>
+    ` : ""}
     <div class="output-section">
       <h3>Markdown deliverable</h3>
       <pre>${escapeHtml(output.markdown)}</pre>
@@ -431,47 +519,261 @@ function outputHtml(output) {
   `;
 }
 
+function inputValue(input, keys, fallback = "Not specified") {
+  for (const key of keys) {
+    const value = String(input[key] || "").trim();
+    if (value) return value;
+  }
+  return fallback;
+}
+
+function clipText(value, max = 180) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  return text.length > max ? `${text.slice(0, max - 1)}...` : text;
+}
+
+function table(rows) {
+  return [
+    "| Item | Output |",
+    "| --- | --- |",
+    ...rows.map(([item, output]) => `| ${item.replaceAll("|", "/")} | ${output.replaceAll("|", "/")} |`)
+  ].join("\n");
+}
+
+function projectName(input, tool) {
+  return inputValue(input, ["projectName", "project", "business", "website", "product", "company", "topic"], tool.title);
+}
+
 function generatedRecommendations(tool, input) {
-  const primary = input.business || input.website || input.product || input.topic || input.company || input.project || "the target initiative";
-  const audience = input.audience || input.customer || input.targetAudience || input.market || "the intended audience";
+  const project = projectName(input, tool);
+  const audience = inputValue(input, ["audience", "customer", "targetAudience", "market"], "the intended audience");
+  const goal = clipText(inputValue(input, ["goal", "objective", "task"], "the requested outcome"), 130);
   const base = [
-    `Define the exact decision this ${tool.title} output must support for ${primary}.`,
-    `Prioritize evidence that can be checked by the team before acting.`,
-    `Turn the final answer into owners, dates, and review points instead of leaving it as advice.`
+    `Anchor every section to ${project} and the goal: ${goal}.`,
+    "Use only claims that can be checked from the supplied context, data, or source workflow.",
+    "End with owners, review points, and a first action that can start today."
   ];
   const byDomain = {
     "SEO & GEO": [
-      `Map the highest-intent query set for ${audience} and align each page to one search intent.`,
-      "Add schema, citation targets, FAQ evidence, and AI answer snippets before publishing.",
-      "Track rankings, indexed pages, AI Overview mentions, and assisted conversions weekly."
+      `Prioritize pages and queries where ${audience} is already closest to a decision.`,
+      "Ship schema, internal links, answer snippets, canonical checks, and citation targets as one release bundle.",
+      "Measure indexed pages, AI-answer mentions, CTR, assisted conversions, and crawl errors every week."
     ],
     Marketing: [
-      `Split the campaign into awareness, capture, conversion, and retention motions for ${audience}.`,
-      "Use separate hooks, offers, and proof points for cold, warm, and returning traffic.",
-      "Review spend, creative fatigue, CAC, CVR, and payback before scaling."
+      `Split the campaign into audience capture, proof, offer, and conversion steps for ${audience}.`,
+      "Create three hooks, two landing-page angles, and one retention follow-up before increasing spend.",
+      "Review CAC, CVR, payback, creative fatigue, lead quality, and channel attribution together."
     ],
     "Branding & Design": [
-      `Create a clear positioning spine before choosing visuals for ${primary}.`,
-      "Translate brand values into typography, color, imagery, interface density, and motion rules.",
-      "Stress test the system across landing pages, social posts, email, and product screens."
+      `Turn ${project}'s positioning into visible choices: layout density, palette, type scale, imagery, and component behavior.`,
+      "Design the first viewport around the actual product, object, place, or workflow instead of abstract decoration.",
+      "Validate the direction across mobile, desktop, social preview, email, and a repeated card/list component."
     ],
     "Engineering & AI Agent": [
-      "Separate product requirements, technical risks, data boundaries, and rollout gates.",
-      "Prefer small interfaces, observable workflows, automated checks, and reversible releases.",
-      "Document the agent role, allowed tools, failure modes, escalation points, and eval cases."
+      "Convert requirements into interfaces, data contracts, permissions, tests, observability, and rollout gates.",
+      "Keep the first release reversible with small PRs, feature flags, migrations, and clear failure handling.",
+      "Define agent tools, context limits, eval cases, escalation rules, and human approval boundaries."
     ],
     "AI Research": [
-      `Frame the research question around a testable claim, not a broad topic like ${primary}.`,
-      "Keep literature notes, experiment configs, datasets, and negative results traceable.",
-      "Write the paper outline before running final experiments so evidence maps to sections."
+      `Make the research question testable for ${project}, with a baseline and a failure condition.`,
+      "Track every paper by claim, method, dataset, metric, limitation, and reusable implementation detail.",
+      "Write the paper outline before final experiments so results map directly to sections."
     ],
     "C-Level Advisory": [
-      `Summarize the board-level decision, tradeoff, and downside risk for ${primary}.`,
-      "Convert strategy into operating metrics, budget implications, and accountable owners.",
-      "State what would change the recommendation if new evidence appears."
+      `Frame the leadership decision for ${project} as a tradeoff with financial, people, execution, and timing impact.`,
+      "Separate facts, assumptions, risks, options, recommendation, owner, budget, and deadline.",
+      "Define what new evidence would change the recommendation."
     ]
   };
-  return [...(byDomain[tool.domain] || base), ...base].slice(0, 6);
+  return [...(byDomain[tool.domain] || []), ...base].slice(0, 6);
+}
+
+function concreteDeliverable(tool, input) {
+  const project = projectName(input, tool);
+  const audience = inputValue(input, ["audience", "customer", "targetAudience", "market"], "primary users");
+  const context = clipText(inputValue(input, ["context", "data", "notes"], "No source context supplied"), 220);
+  const goal = clipText(inputValue(input, ["goal", "objective", "task"], "Create a useful execution artifact"), 180);
+  const constraints = clipText(inputValue(input, ["constraints", "limits", "requirements"], "No constraints supplied"), 180);
+
+  if (tool.domain === "Branding & Design") {
+    return [
+      `## Design Direction for ${project}`,
+      "",
+      table([
+        ["Positioning", `${project} should feel useful, credible, and immediately understandable for ${audience}.`],
+        ["First viewport", "Show the real product, workflow, venue, or generated mockup first; keep the headline direct and the primary action visible."],
+        ["Visual tone", "Use a restrained dark interface, violet only for emphasis, teal for success/progress, and neutral surfaces for scanning."],
+        ["Content priority", `Lead with ${goal}; support it with proof, steps, pricing/offer, and a concrete next action.`]
+      ]),
+      "",
+      "### First Screen Blueprint",
+      table([
+        ["Navigation", "Compact brand mark, Dashboard, Tools, Domains, History, Sources, primary CTA."],
+        ["Hero", `Headline: ${project}. Supporting line: ${goal}. Visual: a real generated screen/mockup, not dots or abstract decoration.`],
+        ["Proof strip", "3 metrics: tools available, source repos, saved runs or outcomes."],
+        ["Next section", "Show domain cards or tool cards partially above the fold so scrolling has a clear target."]
+      ]),
+      "",
+      "### Component System",
+      "- Buttons: 8px radius, icon plus label for actions, solid primary only for the main command.",
+      "- Cards: only for repeated domain/tool/history items; no nested cards.",
+      "- Typography: tight operational headings, readable 14-16px body copy, no viewport-scaled body text.",
+      "- Assets: generate one clean product mockup or workflow preview for the hero and reuse cropped variants in cards.",
+      "",
+      `### Constraints Applied\n${constraints}`
+    ].join("\n");
+  }
+
+  if (tool.domain === "SEO & GEO") {
+    return [
+      `## SEO and AI Search Workplan for ${project}`,
+      "",
+      table([
+        ["Primary intent", `${audience} needs pages that answer the decision behind: ${goal}.`],
+        ["Technical release", "Validate robots, sitemap, canonical tags, status codes, page speed, structured data, and internal links."],
+        ["Entity coverage", "Add organization, product/service, FAQ, breadcrumb, review/proof, and author/source signals where relevant."],
+        ["AI answer readiness", "Create concise answer blocks, comparison tables, cited facts, and source-backed summaries."]
+      ]),
+      "",
+      "### 10-Day Queue",
+      "1. Crawl the site and export errors, duplicate titles, missing canonicals, and slow templates.",
+      "2. Pick 5 priority pages by revenue intent or lead quality.",
+      "3. Rewrite each page's H1, intro answer, FAQ, schema, internal links, and evidence block.",
+      "4. Submit updated sitemap and monitor indexation, impressions, CTR, AI-answer mentions, and conversions.",
+      "",
+      `### Evidence Base\n${context}`
+    ].join("\n");
+  }
+
+  if (tool.domain === "Marketing") {
+    return [
+      `## Campaign Plan for ${project}`,
+      "",
+      table([
+        ["Audience", audience],
+        ["Offer", `Package the offer around ${goal}.`],
+        ["Hook 1", `Before/after outcome for ${audience}.`],
+        ["Hook 2", "Risk reversal, proof, guarantee, demo, or fast-start result."],
+        ["Conversion path", "Ad or post -> focused landing page -> proof block -> form/checkout -> follow-up sequence."]
+      ]),
+      "",
+      "### 14-Day Launch Calendar",
+      "1. Day 1-2: finalize offer, proof points, landing page outline, and tracking.",
+      "2. Day 3-5: create 3 ad angles, 5 organic posts, 2 email/SMS follow-ups.",
+      "3. Day 6-10: run low-budget tests, remove weak hooks, keep winning proof.",
+      "4. Day 11-14: scale one channel and produce a learning memo with CAC, CVR, lead quality, and next test.",
+      "",
+      `### Constraints Applied\n${constraints}`
+    ].join("\n");
+  }
+
+  if (tool.domain === "Engineering & AI Agent") {
+    return [
+      `## Implementation Brief for ${project}`,
+      "",
+      table([
+        ["Scope", goal],
+        ["Interfaces", "Define inputs, outputs, auth, data ownership, retries, and error states before coding."],
+        ["Agent boundary", "List allowed tools, forbidden actions, context sources, approval gates, and audit logs."],
+        ["Verification", "Add unit tests for contracts, integration tests for flows, and smoke tests for deployment."],
+        ["Rollout", "Ship behind a flag, monitor errors/latency/cost, and keep rollback instructions ready."]
+      ]),
+      "",
+      "### Ticket Slice",
+      "1. Data model and validation contract.",
+      "2. UI or API workflow with empty/loading/error/success states.",
+      "3. Provider integration with timeout, retry, and structured output parsing.",
+      "4. Observability, permission checks, and release gate.",
+      "",
+      `### Context\n${context}`
+    ].join("\n");
+  }
+
+  if (tool.domain === "AI Research") {
+    return [
+      `## Research Memo for ${project}`,
+      "",
+      table([
+        ["Question", goal],
+        ["Hypothesis", `A measurable intervention can improve the target outcome for ${audience}.`],
+        ["Baseline", "Run a simple baseline before custom modeling or complex experiments."],
+        ["Evaluation", "Track dataset, metric, split, failure cases, confidence interval, and qualitative examples."],
+        ["Deliverable", "Produce an annotated bibliography, experiment table, and paper-style outline."]
+      ]),
+      "",
+      "### Experiment Spine",
+      "1. Literature pass: 8-12 papers, grouped by claim and limitation.",
+      "2. Baseline: smallest reproducible model or method that answers the question.",
+      "3. Ablation: one variable changed at a time.",
+      "4. Write-up: abstract, method, results, limitations, and next experiment.",
+      "",
+      `### Available Data\n${context}`
+    ].join("\n");
+  }
+
+  if (tool.domain === "C-Level Advisory") {
+    return [
+      `## Executive Memo for ${project}`,
+      "",
+      table([
+        ["Decision", goal],
+        ["Recommendation", "Proceed with a narrow first move, clear owner, measurable checkpoint, and explicit stop condition."],
+        ["Upside", `Improves speed, clarity, or revenue quality for ${audience}.`],
+        ["Risk", `Main constraint: ${constraints}.`],
+        ["Ask", "Approve owner, budget/time box, success metric, and next review date."]
+      ]),
+      "",
+      "### Board-Ready Narrative",
+      "1. What changed: summarize the trigger and current state.",
+      "2. Options: do nothing, small controlled move, larger strategic bet.",
+      "3. Recommendation: choose one path with owner and metric.",
+      "4. Risk control: name the signal that stops or changes the plan.",
+      "",
+      `### Context\n${context}`
+    ].join("\n");
+  }
+
+  return [
+    `## Execution Artifact for ${project}`,
+    "",
+    table([
+      ["Goal", goal],
+      ["Audience", audience],
+      ["Context", context],
+      ["Constraints", constraints],
+      ["First action", "Choose the owner, define the acceptance criteria, and start with the smallest useful deliverable."]
+    ])
+  ].join("\n");
+}
+
+function workflowFor(tool, input) {
+  const project = projectName(input, tool);
+  const sourceSteps = (tool.workflowSteps || []).slice(0, 3);
+  return [
+    `Frame ${tool.title} around ${project} and one measurable outcome.`,
+    "Extract the useful constraints, facts, and source workflow instructions.",
+    ...sourceSteps,
+    "Produce a concrete artifact the team can review, copy, and execute.",
+    "Assign owners, validation checks, and the next run date."
+  ].slice(0, 7);
+}
+
+function checklistFor(tool) {
+  const shared = [
+    "Replace any placeholder with project-specific facts before sharing.",
+    "Assign one owner for the first action.",
+    "Add a review date and success metric.",
+    "Export the Markdown and attach it to the working document."
+  ];
+  const extra = {
+    "Branding & Design": "Check desktop and mobile screenshots for text overflow, weak contrast, and decorative noise.",
+    "SEO & GEO": "Validate schema, canonical tags, sitemap, indexation, and internal links after publishing.",
+    Marketing: "Confirm tracking pixels, UTMs, CRM stages, and conversion events before launch.",
+    "Engineering & AI Agent": "Run tests, permission checks, timeout handling, and rollback steps before release.",
+    "AI Research": "Log dataset versions, baseline config, metrics, and negative results.",
+    "C-Level Advisory": "Confirm the recommendation has a budget owner and a decision deadline."
+  };
+  return [extra[tool.domain] || "Confirm assumptions against the available evidence.", ...shared];
 }
 
 function markdownFor(tool, input, output) {
@@ -490,6 +792,9 @@ ${output.workflow.map((step, index) => `${index + 1}. ${step}`).join("\n")}
 ## Recommendations
 ${output.recommendations.map((item) => `- ${item}`).join("\n")}
 
+## Concrete Deliverable
+${output.deliverable}
+
 ## Execution Checklist
 ${output.checklist.map((item) => `- [ ] ${item}`).join("\n")}
 
@@ -502,27 +807,15 @@ Generated by UpMySkills.`;
 }
 
 function generateOutput(tool, input) {
-  const workflow = (tool.workflowSteps?.length ? tool.workflowSteps : [
-    "Clarify the objective and target audience.",
-    "Collect the strongest available inputs and constraints.",
-    "Produce a prioritized execution plan.",
-    "Create a review checklist and next actions."
-  ]).slice(0, 8);
+  const project = projectName(input, tool);
   const recommendations = generatedRecommendations(tool, input);
-  const checklist = [
-    "Confirm the input assumptions with the owner.",
-    "Review the generated plan against source constraints.",
-    "Assign one owner for each priority action.",
-    "Export the Markdown and attach it to the working doc.",
-    "Re-run the tool after fresh data or stakeholder feedback."
-  ];
-  const primary = input.business || input.website || input.product || input.topic || input.company || input.project || tool.title;
   const output = {
     toolId: tool.id,
-    summary: `${tool.title} plan for ${primary}`,
-    workflow,
+    summary: `${tool.title} generated a ${tool.domain} deliverable for ${project}.`,
+    workflow: workflowFor(tool, input),
     recommendations,
-    checklist,
+    deliverable: concreteDeliverable(tool, input),
+    checklist: checklistFor(tool),
     attribution: {
       sourceRepo: tool.sourceRepo,
       sourcePath: tool.sourcePath,
@@ -689,9 +982,24 @@ document.addEventListener("submit", (event) => {
   }
 });
 
-document.addEventListener("input", (event) => {
+document.addEventListener("input", async (event) => {
   if (event.target?.id === "toolSearch") {
     state.query = event.target.value;
+    state.visibleCount = PAGE_SIZE;
+
+    if (state.domain === "All" && state.query.trim().length === 1 && !state.allCatalogLoaded) {
+      const count = document.getElementById("toolCount");
+      const results = document.getElementById("toolResults");
+      if (count) count.textContent = "Type at least 2 characters to search all domains.";
+      if (results) results.innerHTML = toolsOverviewHtml();
+      return;
+    }
+
+    if (state.domain === "All" && state.query.trim().length >= 2 && !state.allCatalogLoaded) {
+      showToolResultsLoading("Loading searchable catalogs once...");
+      await ensureAllCatalogs();
+    }
+
     refreshToolGrid();
   }
 });
@@ -699,11 +1007,16 @@ document.addEventListener("input", (event) => {
 document.addEventListener("change", async (event) => {
   if (event.target?.id === "domainFilter") {
     state.domain = event.target.value;
-    if (state.domain === "All") {
-      await ensureAllTools();
-    } else {
-      await ensureDomainTools(state.domain);
+    state.visibleCount = PAGE_SIZE;
+
+    if (state.domain !== "All") {
+      showToolResultsLoading(`Loading ${state.domain} catalog...`);
+      await ensureDomainCatalog(state.domain);
+    } else if (state.query.trim().length >= 2 && !state.allCatalogLoaded) {
+      showToolResultsLoading("Loading searchable catalogs once...");
+      await ensureAllCatalogs();
     }
+
     refreshToolGrid();
   }
 });
@@ -728,6 +1041,11 @@ document.addEventListener("click", async (event) => {
     exportMarkdown(state.output);
   }
 
+  if (action === "load-more") {
+    state.visibleCount += PAGE_SIZE;
+    refreshToolGrid();
+  }
+
   if (action === "clear-history") {
     saveRuns([]);
     renderHistory();
@@ -748,7 +1066,6 @@ fetch("data/manifest.json", { cache: "no-store" })
     state.sourceCounts = payload.sourceCounts || {};
     state.domainCounts = payload.domainCounts || [];
     state.featuredTools = payload.featuredTools || [];
-    state.toolIndex = payload.toolIndex || [];
     state.skippedCount = payload.skippedCount || 0;
     state.generatedAt = payload.generatedAt || "";
     render();
