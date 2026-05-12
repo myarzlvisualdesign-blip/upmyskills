@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UpMySkills - Executable AI Skills Tools</title>
+    <meta
+      name="description"
+      content="Run executable web tools generated from Claude and AI skills repositories."
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <a class="brand" href="#/">
+          <span class="brand-mark">U</span>
+          <span>
+            <strong>UpMySkills</strong>
+            <small>Executable AI skills tools</small>
+          </span>
+        </a>
+        <nav class="nav">
+          <a href="#/dashboard">Dashboard</a>
+          <a href="#/tools">Tools</a>
+          <a href="#/domains/seo-geo">Domains</a>
+          <a href="#/history">History</a>
+          <a href="#/sources">Sources</a>
+          <a href="#/settings">Settings</a>
+        </nav>
+      </header>
+
+      <main id="app">
+        <section class="loading">
+          <div class="spinner"></div>
+          <p>Loading executable tools...</p>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast"></div>
+    <script src="app.js"></script>
+  </body>
+</html>

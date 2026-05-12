@@ -1,38 +1,55 @@
-# Upmyskills
+# UpMySkills
 
-Upmyskills is a static AI skills workspace built from the repositories referenced in the provided screenshots. It turns marketing, SEO/GEO, branding, engineering, AI research, and C-level advisory skill sources into a searchable tool library and stack builder.
+UpMySkills turns Claude and AI skill repositories into executable web tools. It is not a link directory: ingested skills are normalized into input forms, workflow steps, prompt templates, output schemas, reusable Markdown deliverables, source attribution, and saved generation history.
 
-The app includes a generated skill-level catalog with verified `SKILL.md` paths from the source repositories. The UI itself is static and has no application-side usage quota. Individual skill runtimes still depend on each upstream repository's instructions, dependencies, API keys, and external service limits.
+## Stack
 
-## Sources
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- shadcn-style UI primitives
+- Prisma + SQLite for local development
+- API route generation with a local LLM provider abstraction
 
-- `kostja94/marketing-skills`
-- `coreyhaines31/marketingskills`
-- `AgriciDaniel/claude-ads`
-- `AgriciDaniel/claude-seo`
-- `zubair-trabzada/geo-seo-claude`
-- `rampstackco/claude-skills`
-- `nexu-io/open-design`
-- `ComposioHQ/awesome-claude-skills`
-- `alirezarezvani/claude-skills`
-- `VoltAgent/awesome-agent-skills`
-- `Orchestra-Research/AI-Research-SKILLs`
-- `garrytan` profile reference via the VoltAgent index
+## Core Routes
 
-## Run locally
+- `/` landing page
+- `/dashboard` domain overview, popular tools, recent outputs
+- `/tools` searchable/filterable tool library
+- `/tools/[toolId]` executable tool runner
+- `/domains/[domain]` domain collections
+- `/history` saved generations
+- `/sources` source repos, licenses, attribution
+- `/settings` provider configuration UI
 
-Open `public/index.html` in a browser, or run any static file server pointed at `public`.
-
-## Rebuild skill catalog
-
-The generated catalog is stored in `public/skill-catalog.js`.
+## Development
 
 ```bash
-npm run catalog
+npm install
+npm run ingest:repos
+npm run dev
 ```
 
-## Deploy
+The ingestion command clones/fetches source repositories into `.repos`, parses markdown/json/yaml/txt files, extracts usable skills, writes `data/tools.generated.json`, pushes the Prisma schema, and seeds local SQLite.
+
+## Verification
 
 ```bash
-wrangler pages deploy public --project-name upmyskills
+npm run typecheck
+npm run build
 ```
+
+## Cloudflare Pages Deployment
+
+The local Next.js app uses Prisma + SQLite for development. Cloudflare Pages is deployed from `cloudflare-static`, a browser-only runner that loads `tools.json`, executes every generated workflow in the UI, supports copy/export, and saves history in localStorage.
+
+```bash
+npm run build:static
+npm run pages:deploy
+```
+
+## Notes
+
+- The default provider is `local`, so every generated tool can run without a paid API key.
+- Source tools may reference external paid services such as Figma, DataForSEO, Firecrawl, ad platforms, or hosted model providers. Those requirements are inherited from the source skill and should be handled per tool workflow.
+- The user-provided repo URLs `nexu-i/o/open-design` and `zubair-trabzada/geo-seo-claude-skills` are handled with fallback URLs to the valid repositories discovered during ingestion.

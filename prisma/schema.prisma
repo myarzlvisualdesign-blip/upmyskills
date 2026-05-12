@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Tool {
+  id             String   @id
+  title          String
+  slug           String   @unique
+  domain         String
+  description    String
+  sourceRepo     String
+  sourcePath     String?
+  license        String
+  inputSchema    Json
+  promptTemplate String
+  outputSchema   Json
+  workflowSteps  Json
+  exampleOutput  Json
+  sampleInput    Json
+  tags           Json
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  runs           Run[]
+
+  @@index([domain])
+  @@index([sourceRepo])
+}
+
+model Run {
+  id        String   @id @default(cuid())
+  toolId    String
+  input     Json
+  output    Json
+  provider  String   @default("local")
+  createdAt DateTime @default(now())
+  tool      Tool     @relation(fields: [toolId], references: [id], onDelete: Cascade)
+
+  @@index([toolId])
+  @@index([createdAt])
+}
+
+model SourceRepo {
+  id             String   @id
+  name           String
+  url            String   @unique
+  license        String
+  lastIngestedAt DateTime?
+  notes          String
+}

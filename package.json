@@ -1,17 +1,52 @@
 {
   "name": "upmyskills",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "AI skill tools hub built from curated GitHub skill repositories.",
+  "description": "Production web app that turns Claude and AI skill repositories into executable web tools.",
   "scripts": {
-    "catalog": "node scripts/build-skill-catalog.mjs",
-    "dev": "wrangler pages dev public",
-    "pages:deploy": "wrangler pages deploy public --project-name upmyskills"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "ingest:repos": "tsx scripts/ingest-repos.ts",
+    "build:static": "tsx scripts/build-cloudflare-static.ts",
+    "db:push": "prisma db push",
+    "db:seed": "prisma db seed",
+    "prisma:generate": "prisma generate",
+    "pages:deploy": "npm run build:static && wrangler pages deploy cloudflare-static --project-name upmyskills"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.18.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.468.0",
+    "next": "^15.3.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^2.5.5",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.1",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "prisma": "^6.18.0",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "keywords": [
     "ai-skills",
     "claude-skills",
     "codex",
+    "nextjs",
+    "prisma",
     "cloudflare-pages"
   ],
   "license": "MIT"
