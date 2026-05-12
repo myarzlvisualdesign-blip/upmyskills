@@ -184,12 +184,12 @@ function renderLanding() {
   app.innerHTML = `
     <section class="hero">
       <div>
-        <p class="eyebrow">UpMySkills production runner</p>
-        <h1>Run AI skills as real web tools.</h1>
-        <p>Choose a domain, fill a focused workflow form, generate structured output, export Markdown, and keep local history. The tools are normalized from the ingested Claude and AI skills repositories with source attribution.</p>
+        <p class="eyebrow">UpMySkills beta is live</p>
+        <h1>Run thousands of Claude and AI skills as real tools.</h1>
+        <p>UpMySkills turns GitHub skill repos into executable workflows with forms, generated outputs, saved history, Markdown export, and source attribution.</p>
         <div class="actions">
-          <a class="button primary" href="#/tools">Open tool library</a>
-          <a class="button dark" href="#/dashboard">View dashboard</a>
+          <a class="button primary aurora-button" href="#/dashboard">Open dashboard <span aria-hidden="true">→</span></a>
+          <a class="button dark" href="#/tools">Browse tools</a>
         </div>
       </div>
       ${statsHtml()}

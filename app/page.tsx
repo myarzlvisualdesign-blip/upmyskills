@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowRight, Database, Sparkles, Workflow } from "lucide-react";
+import { Database, Sparkles, Workflow } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { AuroraHero } from "@/components/ui/futurastic-hero-section";
 import { DomainCard } from "@/components/domain-card";
 import { domains, domainToSlug } from "@/lib/tools/domains";
 import { getToolStats } from "@/lib/tools/queries";
@@ -14,41 +15,20 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-8">
-      <section className="overflow-hidden rounded-lg border bg-up-ink text-up-cream shadow-premium">
-        <div className="grid gap-8 p-6 md:p-10 xl:grid-cols-[1.1fr_0.9fr]">
-          <div className="flex flex-col justify-center">
-            <p className="mb-4 text-sm font-black uppercase text-up-mint">Production AI skills workspace</p>
-            <h1 className="max-w-4xl text-balance text-5xl font-black leading-none tracking-tight md:text-7xl">
-              Turn GitHub skill repos into tools people can run.
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-up-cream/74">
-              UpMySkills ingests Claude and AI skill repositories, normalizes prompts into forms, runs structured
-              workflows, stores history, and exports reusable Markdown deliverables.
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/dashboard" className={buttonVariants({ size: "lg", className: "bg-up-cream text-up-ink hover:bg-up-cream/90" })}>
-                Open dashboard
-                <ArrowRight className="size-4" />
-              </Link>
-              <Link href="/tools" className={buttonVariants({ variant: "outline", size: "lg", className: "border-up-cream/25 bg-transparent text-up-cream hover:bg-up-cream/10" })}>
-                Browse tools
-              </Link>
-            </div>
-          </div>
-          <div className="grid content-center gap-3">
-            {[
-              ["Executable tools", stats.tools],
-              ["Ingested sources", stats.sources],
-              ["Saved generations", stats.runs]
-            ].map(([label, value]) => (
-              <div key={label} className="rounded-lg border border-up-cream/15 bg-up-cream/8 p-5">
-                <div className="text-4xl font-black">{Number(value).toLocaleString("id-ID")}</div>
-                <div className="mt-1 text-sm font-semibold text-up-cream/64">{label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <AuroraHero
+        eyebrow="UpMySkills beta is live"
+        title="Run thousands of Claude and AI skills as real tools."
+        description="UpMySkills turns GitHub skill repos into executable workflows with forms, generated outputs, saved history, Markdown export, and source attribution."
+        ctaLabel="Open dashboard"
+        ctaHref="/dashboard"
+        secondaryLabel="Browse tools"
+        secondaryHref="/tools"
+        metrics={[
+          { label: "Executable tools", value: stats.tools.toLocaleString("id-ID") },
+          { label: "Source repos", value: stats.sources.toLocaleString("id-ID") },
+          { label: "Saved runs", value: stats.runs.toLocaleString("id-ID") }
+        ]}
+      />
 
       <section className="grid gap-4 md:grid-cols-3">
         <Card>
