@@ -3,12 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>UpMySkills - Executable AI Skills Tools</title>
+    <title>UpMySkills - Professional AI Workflow Platform</title>
     <meta
       name="description"
-      content="Run executable AI workflow tools built from Claude and AI skills repositories."
+      content="Professional AI workflow tools with active tools and API key management."
     />
-    <link rel="stylesheet" href="styles.css?v=light-4" />
+    <link rel="stylesheet" href="styles.css?v=pro-v2" />
   </head>
   <body>
     <div class="shell">
@@ -16,7 +16,7 @@
         <a class="brand" href="#/">
           <span>
             <strong>UpMySkills</strong>
-            <small>Executable AI skills tools</small>
+            <small>Professional AI Workflow Platform</small>
           </span>
         </a>
         <nav class="nav">
@@ -25,6 +25,7 @@
           <a href="#/domains/seo-geo">Domains</a>
           <a href="#/history">History</a>
           <a href="#/sources">Sources</a>
+          <a href="#/api-keys" class="api-keys-link">API Keys</a>
           <a href="#/settings">Settings</a>
         </nav>
       </header>
@@ -32,12 +33,14 @@
       <main id="app">
         <section class="loading">
           <div class="spinner"></div>
-          <p>Loading executable tools...</p>
+          <p>Loading professional tools...</p>
         </section>
       </main>
     </div>
 
     <div id="toast" class="toast"></div>
-    <script src="app.js?v=light-4"></script>
+    <div id="modal-overlay" class="modal-overlay"></div>
+    <div id="api-key-modal" class="modal"></div>
+    <script src="app.js?v=pro-v2"></script>
   </body>
 </html>
